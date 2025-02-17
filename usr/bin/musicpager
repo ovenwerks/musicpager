@@ -1,0 +1,1619 @@
+#!/usr/bin/python3
+#
+#  chartdisplay.py
+#
+#  Copyright 2024 Len Ovens <len@ovenwerks.net>
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
+#
+#
+
+import dbus
+import fcntl
+import gi
+import io
+import subprocess
+import os
+import json
+import shlex
+import shutil
+import sys
+import time
+from os.path import expanduser
+
+gi.require_version("Gtk", "3.0")
+gi.require_version('WebKit2', '4.1')
+
+from gi.repository import Gtk, Gdk, Pango, WebKit2
+
+# the auto_jack module might be in local in some cases
+global install_path
+install_path = os.path.abspath(f"{sys.path[0]}/..")
+#sys.path.insert(1, f"{install_path}/lib/python3/dist-packages")
+#import my_lib
+
+
+class ChordPro():
+
+    def keyguess(self, chText):
+        if chText.find('[') == -1:
+            print("MT string, not a song")
+            return "unknown"
+        # remove all lines before the first line with [
+        ourtxt = chText.split('[', 1)[1]
+        if ourtxt.find('{') != -1:
+            ourtxt = ourtxt.split('{', 1)[0]
+        else:
+            ourtxt = ourtxt.split('\n\n', 1)[0]
+        keypool = ['Ab', 'A', 'Bb', 'B', 'C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G']
+        ourpool = ['0','0','0','0','0','0','0','0','0','0','0','0']
+        found = ourpool.copy()
+        stdpool = "M0m0mM070m0D"
+        shift = 0
+        sharp = False
+        basscrds = []
+        size = 1
+        for raw in ourtxt.split('['):
+            raw = raw.split(']', 1)[0]
+            # print(f"raw: {raw}")
+            if not raw[0] in "ABCDEFG":
+                print(f"{raw} not a chord")
+                continue
+            if "#" in raw:
+                size = 2
+                sharp = True # key can only be ABDEGF#
+            nn = ChordPro.note2num(self, raw[0:size])
+            if len(raw.split('/', 1)) == 2:
+                raw, bass = raw.split('/',1)
+                bas = ChordPro.note2num(self, raw[0:size])
+                if not bas in basscrds:
+                    basscrds.append(bas)
+            #print(f"no bass raw: {raw}")
+            # remove maj7
+            raw = raw.split('ma', 1)[0]
+            #print(f"mag raw: {raw}")
+            if 'm' in raw:
+                #minor
+                raw = raw.split('m', 1)[0]
+                ourpool[nn] = 'm'
+            elif '7' in raw:
+                raw = raw.split('7', 1)[0]
+                ourpool[nn] = '7'
+            elif 'dim' in raw:
+                ourpool[nn] = 'D'
+            else:
+                if ourpool[nn] != '7':
+                    ourpool[nn] = 'M'
+        for b in basscrds:
+            if ourpool[b] == '0':
+                ourpool[b] = 'M'
+            size = 1
+        for x in range(0, 12):
+            l1 = ourpool[x:12]
+            l2 = ourpool[0:x]
+            testl = l1 + l2
+            #print(f"test line: {str(testl)}")
+            fnd = 0
+            for y in range(0, 12):
+                tst = testl[y]
+                std = stdpool[y]
+                if tst == std:
+                    fnd = fnd + 1
+                elif tst == 'M' and std == '7':
+                    fnd = fnd + 1
+                elif tst == 'M' and std == 'D':
+                    fnd = fnd + 1
+                #print(f"test: {tst} standard: {std} fnd: {str(fnd)}")
+            found[x] = fnd
+        #print(f"Found values: {str(found)}")
+        high = [0, found[0]]
+        for z in range(1, 12):
+            if found[z] > high[1]:
+                high[0] = z
+                high[1] = found[z]
+        guessed = keypool[high[0]]
+        #print(f"key pool: {keypool}")
+        if guessed == "Gb" and sharp:
+            guessed = "F#"
+        print(f"Guessed key: {guessed}")
+        return guessed
+
+    def rowheight(self, R_db, R_type):
+        '''returns the height in px of row type considering user
+        set zooms'''
+        # standard seems to be 16px
+        ourdb = R_db['webkit']
+        std = 16
+        # FIXME use css heights.... set css heights first ;)
+        gap = 6.25 # gap is between .1 and .2 so 2 or 3 px Experiment
+        z = float(ourdb['zoom'])/100
+        if R_type == 'blank':
+            # Assume a blank == <br><br> and assume <br> == gap
+            return gap * z * 2
+        l = float(ourdb[R_type]['size'])/100
+        h = z * l * (std + gap)
+        if R_type == '.chords':
+            extra = float(ourdb['.lyrics']['size'])/100
+            ch = z * extra * (std + (gap * 2))
+            h = h + ch
+        if R_type == '.lyrics':
+            h = h + (gap * 1.5)
+        return h
+
+    def getOffset(self, crd, offset, key):
+        # check for | :|| words etc. Is it really a chord?
+        if not crd[0] in {'A', 'B', 'C', 'D', 'E', 'F', 'G'}:
+            return crd # not a chord
+        if offset == '0':
+            return crd
+        sz = len(crd)
+        mid = ""
+        #print(f"offset: {crd} by {offset}")
+        if sz > 1 and crd[1] in {'#', 'b'}:
+            tcrd = crd[0:2]
+            if sz > 2:
+                mid = crd[2:]
+        else:
+            tcrd = crd[0]
+            if sz > 1:
+                mid = crd[1:]
+        bn = ""
+        bp = sz
+        if '/' in mid:
+            bp = mid.find('/')
+            bn = mid[bp + 1:]
+            mid = mid[0:bp +1]
+        #print(f"bass pos: {str(bp)} Bass note: {bn} chord {tcrd} mid: {mid}")
+        cd = ChordPro.shiftnote(self, tcrd, offset, key)
+        bs = ""
+        if len(bn):
+            bs = ChordPro.shiftnote(self, bn, offset, key)
+        #print(f"Returned chord: {cd}{mid}{bs}")
+        return f"{cd}{mid}{bs}"
+
+    def note2num(self, note):
+        ''' convert note to number '''
+        # all possible notes for changing to a number
+        pool = "aAbBCdDeEFgG"
+        nt = note[0]
+        nn = pool.find(nt, 1)
+        if "#" in note:
+            nn = nn + 1
+            if nn > 11:
+                nn = nn - 12
+        if "b" in note:
+            nn = nn - 1
+        return nn
+
+
+    def shiftnote(self, note, off, key):
+        # take note and return a shifted note right for new key
+        # list of keys that use flats
+        flat = "abdeFg"
+        # all possible notes for changing to a number
+        pool = "aAbBCdDeEFgG"
+        # pool shifted so relative minor shows major
+        mpool = "FgGaAbBCdDeE"
+        # possible flats
+        lower = "abdeg"
+        #newnote = note # not used?
+        ofs = int(off)
+        Fl = False
+        kn = ChordPro.note2num(self, key)
+        # correct for minor
+        if "m" in key:
+            mk = mpool[kn]
+            kn = pool.find(mk, 1)
+        # new key after offset
+        kn = kn + ofs
+        if kn > 11:
+            kn = kn - 12
+        elif kn < 0:
+            kn = kn + 12
+        nk = pool[kn]
+        # determine if new key uses flats or sharps
+        if nk in flat:
+            Fl = True
+        # print(f"Key: {key} new key: {nk} note: |{note}|")
+        # do the same for the real note now
+        nn = ChordPro.note2num(self, note)
+        # print(f"note number {nn} note {pool[nn]}")
+        nn = nn + ofs
+        if nn > 11:
+            nn = nn - 12
+        elif nn < 0:
+            nn = nn + 12
+        # print(f"fix overshoot: note number {nn} note {pool[nn]}")
+        ext = ""
+        nt = pool[nn]
+        if nt in lower:
+            if Fl:
+                nn = nn + 1
+                ext = "b"
+            else:
+                nn = nn - 1
+                ext = "#"
+        # print(f"fix if #/b note number {nn} note {pool[nn]}")
+        nt = pool[nn]
+        return f"{nt}{ext}"
+
+    def toHtml(self, R_db, strng, pageht, offset, onecolumn):
+        ''' take strng and return converted to html,
+        R_db is config, offset is transpose and onecolumn on True
+        will produce just one column for printing, otherwise we want
+        any one column to fit the widget height'''
+        # top of file
+        hfile = '<html>\n<head>\n<meta charset="utf-8">\n'
+        hfile = f'{hfile}<link rel="stylesheet" href="chordpro.css">'
+        hfile = f"{hfile}\n</head>\n<body>"
+        hfile = f'{hfile}\n<table class="doc"><tr class="pages">'
+        winht = int(R_db['state']['boxheight'])
+        key = 'A'
+        height = 0.0
+        R_db['state']['pages'] = '1'
+        pagetop = False
+        titl = True
+        buf = io.StringIO(strng)
+        for line in buf:
+            if height > (winht - ChordPro.rowheight(self, R_db, '.chords')):
+                # page full
+                hfile = f'{hfile}\n</td>'
+                pagetop = False
+                height = 0.0
+                R_db['state']['pages'] = str(int(R_db['state']['pages']) + 1)
+            if not pagetop:
+                hfile = f'{hfile}\n<td class="page">'
+                pagetop = True
+            if '{t' in line and titl:
+                st = line.find(":") + 1
+                end = line.find("}")
+                titl = False
+                txt = line[st:end].strip()
+                ht = ChordPro.rowheight(self, R_db, '.title')
+                hfile = f'{hfile}\n<div class="title">{txt}</div>'
+                # print(f"Title line text: {txt}")
+            elif '{st' in line or '{sub' in line:
+                st = line.find(":") + 1
+                end = line.find("}")
+                txt = line[st:end].strip()
+                ht = ChordPro.rowheight(self, R_db, '.subtitle')
+                if len(txt) > 75:
+                    splt = txt.find(' ', 60)
+                    txt1 = txt[0:splt]
+                    txt = txt[splt:]
+                    ht = ht + ht
+                    hfile = f'{hfile}\n<div class="subtitle">{txt1}</div>'
+                hfile = f'{hfile}\n<div class="subtitle">{txt}</div>'
+                # print(f"subtitle line text: {txt}")
+            elif '{auth' in line or '{art' in line:
+                st = line.find(":") + 1
+                end = line.find("}")
+                txt = line[st:end].strip()
+                ht = ChordPro.rowheight(self, R_db, '.subtitle')
+                hfile = f'{hfile}\n<div class="subtitle">{txt}</div>'
+                # print(f"author or artist line text: {txt}")
+            elif '{c:' in line or 'comment' in line:
+                st = line.find(":") + 1
+                end = line.find("}")
+                txt = line[st:end].strip()
+                ht = ChordPro.rowheight(self, R_db, '.comment')
+                hfile = f'{hfile}\n<div class="comment">{txt}</div>'
+                # print(f"comment line text: {txt}")
+            elif line == "\n":
+                ht = ChordPro.rowheight(self, R_db, 'blank')
+                # hfile = f'{hfile}\n<br /><br />'
+                hfile = f'{hfile}\n<br class="blank" />'
+                # print(f"blank line")
+            elif '{k' in line:
+                st = line.find(":") + 1
+                end = line.find("}")
+                key = line[st:end].strip()
+            elif '{' in line:
+                # some other directive, Toss for now
+                continue
+            elif line[0] == "#":
+                # throw these lines away too
+                continue
+            else:
+                ht = ChordPro.rowheight(self, R_db, '.chords')
+                hfile = f'{hfile}\n<table class="songline">'
+                cline = '\n<tr class="chords">'
+                lline = '\n<tr class="lyrics">'
+                ourline = line.strip()
+                if ourline.find("[") == -1:
+                    ht = ChordPro.rowheight(self, R_db, '.lyrics')
+                for sub in ourline.split('['):
+                    # each sub has either one ] or none
+                    if sub == "":
+                        # line begins with [ so empty sub skip
+                        continue
+                    pre, bra, tail = sub.partition("]")
+                    # print(f"sline sub: |{sub}|, p: |{pre}| b: |{bra}| t: |{tail}|")
+                    if bra == "":
+                        #whole thing should be text, no chords
+                        cline = f"{cline}<td> </td>"
+                        lline = f"{lline}<td>{pre} </td>"
+                    elif not tail == "" and tail[0] == " ":
+                        # lyric does not start under chord
+                        pre = ChordPro.getOffset(self, pre, offset, key)
+                        cline = f"{cline}<td>{pre} </td><td> </td>"
+                        lline = f"{lline}<td> </td><td>{tail} </td>"
+                    else:
+                        pre = ChordPro.getOffset(self, pre, offset, key)
+                        cline = f"{cline}<td>{pre} </td>"
+                        lline = f"{lline}<td>{tail} </td>"
+                cline = f"{cline}</tr>\n"
+                lline = f"{lline}</tr>\n"
+                # print(f"table rows: {cline}{lline}")
+                hfile = f'{hfile}{cline}{lline}\n</table>'
+            height = height + ht
+        hfile = f"{hfile}</tr></table></body></html>\n"
+        return hfile
+
+
+class NewSetDialog(Gtk.Dialog):
+
+    def __init__(self, parent):
+        super().__init__(title="Add New Set List", parent=window)
+        #super().__init__(title="Add New Set List", transient_for=parent, flags=0)
+        self.add_buttons(
+            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK
+        )
+        self.set_default_size(150, 100)
+
+        label = Gtk.Label(label="Enter name for setlist")
+        entry = Gtk.Entry()
+        entry.set_buffer(newsetbuff)
+        box = self.get_content_area()
+        box.add(label)
+        box.add(entry)
+        entry.connect("activate", self.submit)
+        self.show_all()
+
+    def submit(self, entry):
+        # Send the OK response to the dialog
+        self.response(Gtk.ResponseType.OK)
+
+class OKCancelDialog(Gtk.Dialog):
+
+    def __init__(self, parent):
+        super().__init__(title="Remove Set List", parent=window)
+        self.add_buttons(
+            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK
+        )
+        self.set_default_size(150, 100)
+
+        label = Gtk.Label(label="Remove list: are you sure")
+        box = self.get_content_area()
+        box.add(label)
+        self.show_all()
+
+class notSavedDialog(Gtk.Dialog):
+
+    def __init__(self, parent):
+        super().__init__(title="Song Changed", parent=window)
+        self.add_buttons(
+            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK
+        )
+        self.set_default_size(150, 100)
+
+        label = Gtk.Label(label="Current Song Changed, Save?")
+        box = self.get_content_area()
+        box.add(label)
+        self.show_all()
+
+class UserConfig():
+
+    def __init__(self):
+        global config
+        global lists_db
+
+        config_path = os.path.expanduser(f"~/.config/{appname}/")
+        # Make sure this directory exists
+        if not os.path.isdir(config_path):
+            os.makedirs(config_path)
+        c_file = f"{config_path}/{appname}.json"
+        if os.path.isfile(c_file) and os.path.getsize(c_file) > 100:
+            # config file exists, read it in
+            with open(c_file) as f:
+                config = json.load(f)
+        else:
+            print(f"{c_file} not found. Make one.")
+            # Our config db has:
+            #       general - Misc params
+            #       webkit  - this is how our chart looks
+            #       hotkeys - Chart display hot keys
+            #       state   - WHat is going on right now
+            #### Line below is important, creates our db
+            config = {'version': "1.0"}
+        if not 'state' in config:
+            config['state'] = {'key': "unknown"}
+        state_db = config['state']
+        state_db['dirty'] = False # just started nothing saveable
+        if not 'song' in state_db:
+            state_db['song'] = "0" # song number in list
+        if not 'pages' in state_db:
+            state_db['pages'] = "1" # pages in this song
+        if not 'page' in state_db:
+            state_db['page'] = "1" # page in this song
+        if not 'file' in state_db:
+            state_db['file'] = "none" # current song file name
+        if not 'config_path' in state_db:
+            state_db['config_path'] = config_path
+        if not 'list' in state_db:
+            state_db['list'] = "0" # current list number
+        if not 'offset' in state_db:
+            state_db['offset'] = "0" # key offset of current song
+        if not 'main_x' in state_db:
+            state_db['main_x'] = "1900" # main window width
+        if not 'main_y' in state_db:
+            state_db['main_y'] = "1000" # main window height
+        if not 'boxheight' in state_db:
+            state_db['boxheight'] = '850'
+        # stuff to do with webkit chart.
+        if not 'webkit' in config:
+            config['webkit'] = {'zoom': "200"}
+        webdb = config['webkit']
+        if not '.title' in webdb:
+            webdb['.title'] = {'size': "100", 'color': "black"}
+        if not '.subtitle' in webdb:
+            webdb['.subtitle'] = {'size': "75", 'color': "black"}
+        if not '.comment' in webdb:
+            webdb['.comment'] = {'size': "90", 'color': "black"}
+        if not '.chords' in webdb:
+            webdb['.chords'] = {'size': "88", 'color': "red"}
+        if not '.lyrics' in webdb:
+            webdb['.lyrics'] = {'size': "80", 'color': "black"}
+        if not 'general' in config:
+            config['general'] = {'edzoom': "200"}
+        gendb = config['general']
+        if not 'chrtcol' in gendb:
+            gendb['chrtcol'] = "1" # FIXME do we use this?
+            # we should I think. One col would have to scroll vertically
+            # it would also be good for html to pdf
+        if not 'folder' in gendb:
+            gendb['folder'] = os.path.expanduser(f"~/")
+        if not 'folderdepth' in gendb:
+            gendb['folderdepth'] = "1"
+        if not 'pagesize' in gendb:
+            gendb['pagesize'] = "900" #width px
+        if not 'hotkeys' in config:
+            # 6 is used but ^ is thought
+            config['hotkeys'] = {'keyup': "6"}
+        hotdb = config['hotkeys']
+        if not 'keydown' in hotdb:
+            hotdb['keydown'] = "v"
+        if not 'pagenext' in hotdb:
+            hotdb['pagenext'] = "c"
+        if not 'pageback' in hotdb:
+            hotdb['pageback'] = "a"
+        if not 'songnext' in hotdb:
+            hotdb['songnext'] = "b"
+        if not 'songback' in hotdb:
+            # , looks like <
+            hotdb['songback'] = ","
+        #print("init has config, will push to widgets")
+        stylezoom.set_sensitive(False)
+        styletitlesz.set_sensitive(False)
+        stylesubtsz.set_sensitive(False)
+        stylechordsz.set_sensitive(False)
+        stylelyricsz.set_sensitive(False)
+        stylecommentsz.set_sensitive(False)
+        styletitleclr.set_sensitive(False)
+        stylesubtclr.set_sensitive(False)
+        stylechordclr.set_sensitive(False)
+        stylelyricclr.set_sensitive(False)
+        stylecommentclr.set_sensitive(False)
+        stylezoom.set_value(int(webdb['zoom']))
+        styletitlesz.set_value(int(webdb['.title']['size']))
+        stylesubtsz.set_value(int(webdb['.subtitle']['size']))
+        stylechordsz.set_value(int(webdb['.chords']['size']))
+        stylelyricsz.set_value(int(webdb['.lyrics']['size']))
+        stylecommentsz.set_value(int(webdb['.comment']['size']))
+        styletitleclr.set_active_id(webdb['.title']['color'])
+        stylesubtclr.set_active_id(webdb['.subtitle']['color'])
+        stylechordclr.set_active_id(webdb['.chords']['color'])
+        stylelyricclr.set_active_id(webdb['.lyrics']['color'])
+        stylecommentclr.set_active_id(webdb['.comment']['color'])
+        stylezoom.set_sensitive(True)
+        styletitlesz.set_sensitive(True)
+        stylesubtsz.set_sensitive(True)
+        stylechordsz.set_sensitive(True)
+        stylelyricsz.set_sensitive(True)
+        stylecommentsz.set_sensitive(True)
+        styletitleclr.set_sensitive(True)
+        stylesubtclr.set_sensitive(True)
+        stylechordclr.set_sensitive(True)
+        stylelyricclr.set_sensitive(True)
+        stylecommentclr.set_sensitive(True)
+        folderEntry.set_sensitive(False)
+        folderEntry.set_text(config['general']['folder'])
+        folderEntry.set_sensitive(True)
+        folderdepth.set_sensitive(False)
+        folderdepth.set_value(int(config['general']['folderdepth']))
+        folderdepth.set_sensitive(True)
+        accPfwd.set_sensitive(False)
+        accPbck.set_sensitive(False)
+        accSnxt.set_sensitive(False)
+        accSbck.set_sensitive(False)
+        accKup.set_sensitive(False)
+        accKdn.set_sensitive(False)
+        accPfwd.set_text(config['hotkeys']['pagenext'])
+        accPbck.set_text(config['hotkeys']['pageback'])
+        accSnxt.set_text(config['hotkeys']['songnext'])
+        accSbck.set_text(config['hotkeys']['songback'])
+        accKup.set_text(config['hotkeys']['keyup'])
+        accKdn.set_text(config['hotkeys']['keydown'])
+        accPfwd.set_sensitive(True)
+        accPbck.set_sensitive(True)
+        accSnxt.set_sensitive(True)
+        accSbck.set_sensitive(True)
+        accKup.set_sensitive(True)
+        accKdn.set_sensitive(True)
+        #print(f"INIT. GUI set, Dirty: {str(state_db['dirty'])}")
+
+        # load setlist
+        list_file = f"{config_path}/setlist.json"
+        if os.path.isfile(list_file) and os.path.getsize(list_file) > 20:
+            # set list file exists, read it in
+            with open(list_file) as f:
+                lists_db = json.load(f)
+        else:
+            print("no set list file, make blank db.")
+            lists_db = {}
+        state_db['list'] = "0"
+        setlistlabel.set_text("Current Set List: None")
+        self.setselectfix()
+        self.save_webcss()
+        self.sethotkeys()
+        #print("webcss saved")
+        self.Save()
+        #print("config saved")
+        #print(f"INIT end, Dirty: {str(state_db['dirty'])}")
+
+
+    def setselectfix(self):
+        global config
+        global lists_db
+        setselecter.set_sensitive(False)
+        setselecter.remove_all()
+        setselecter.append("0", "None")
+        for x in lists_db:
+            name = lists_db[x]['listname']
+            setselecter.append(x, name)
+        setselecter.set_active_id(config['state']['list'])
+        setselecter.set_sensitive(True)
+
+    def fillsonglist(self):
+        global config
+        global lists_db
+        #print("fillsonglist")
+        state = config['state']
+        placeholder = 'unknown'
+        # clear out list
+        each = None
+        while songlist.get_row_at_index(0):
+            each = songlist.get_row_at_index(0)
+            each.destroy()
+        if state['list'] == "0":
+            print("no list")
+            return
+        if len(lists_db[state['list']]['songs']) < 1:
+            print("not even one song in this list")
+            return
+        for idx in lists_db[state['list']]['songs']:
+            song_db = lists_db[state['list']]['songs'][idx]
+            with open(song_db['file'], encoding="utf-8") as f:
+                read_data = f.read()
+            if read_data.lower().find("{t:") == -1:
+                if read_data.lower().find("{title:") == -1:
+                    # no title
+                    base = os.path.basename(state['file'])
+                    name = base.split(".")[0]
+                else:
+                    name = read_data[read_data.lower().find("{title:")+7:].split("}",1)[0].strip()
+            else:
+                name = read_data[read_data.lower().find("{t:")+3:].split("}",1)[0].strip()
+            if read_data.lower().find("{key:") == -1:
+                if read_data.lower().find("# key") == -1:
+                    # no key
+                    key = placeholder
+                else:
+                    key1 = read_data[read_data.lower().find("# key = ") + 8:]
+                    key = key1.split("\n",1)[0].strip()
+            else:
+                key = read_data[read_data.lower().find("{key:")+5:].split("}",1)[0].strip()
+            if read_data.lower().find("{composer:") == -1:
+                if read_data.lower().find("{artist:") == -1:
+                    if read_data.lower().find("{subtitle:") == -1:
+                        if read_data.lower().find("{st:") == -1:
+                            print(" no author")
+                            author = placeholder
+                        else:
+                            author = read_data[read_data.lower().find("{st:")+4:].split("}",1)[0].strip()
+                    else:
+                        author = read_data[read_data.lower().find("{subtitle:")+10:].split("}",1)[0].strip()
+                else:
+                    author = read_data[read_data.lower().find("{artist:")+8:].split("}",1)[0].strip()
+            else:
+                author = read_data[read_data.lower().find("{composer:")+10:].split("}",1)[0].strip()
+            desc = f"{idx}: {name} - {author} - "
+            desc = f"{desc}Key: {key} - Key offset: {song_db['offset']}"
+            label = Gtk.Label.new(desc)
+            label.set_justify(Gtk.Justification.LEFT)
+            row = Gtk.ListBoxRow()
+            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=50)
+            row.add(hbox)
+            hbox.pack_start(label, False, False, 0)
+            songlist.add(row)
+            label.show()
+            songlist.show_all()
+
+
+    def loadsong(self):
+        global config
+        global lists_db
+        state = config['state']
+        state['page'] = 1
+        #print(f"File to load {state['file']}")
+        #print(f"Top of load song, dirty: {str(state['dirty'])}")
+        if state['file'] == 'none':
+            state['song'] = '0'
+            read_data = ""
+        else:
+            with open(state['file'], encoding="utf-8") as f:
+                read_data = f.read()
+        if state['list'] != "0" and state["song"] != "0":
+            # offset should always come from list db as different
+            # lists might have the same song in a different key
+            song_db = lists_db[state['list']]['songs'][state['song']]
+            state['offset'] = song_db['offset']
+        else:
+            state['offset'] = "0"
+            if read_data.lower().find("# trans") != -1:
+                os1 = read_data[read_data.lower().find("# transpose = ") + 14:]
+                state['offset'] = os1.split("\n",1)[0].strip()
+        #print(f"load song, text read, dirty: {str(state['dirty'])}")
+
+        if read_data.lower().find("{t:") == -1:
+            if read_data.lower().find("{title:") == -1:
+                # no title
+                base = os.path.basename(state['file'])
+                sname = base.split(".")[0]
+            else:
+                sname = read_data[read_data.lower().find("{title:")+7:].split("}",1)[0].strip()
+        else:
+            sname = read_data[read_data.lower().find("{t:")+3:].split("}",1)[0].strip()
+        if read_data.lower().find("{k") == -1:
+            if read_data.lower().find("# key") == -1:
+                state['key'] = "unknown"
+            else:
+                ke1 = read_data[read_data.lower().find("# key = ") + 8:]
+                state['key'] = ke1.split("\n",1)[0].strip()
+        else:
+            key1 = read_data[read_data.lower().find("{k"):]
+            state['key'] = key1.split(": ")[1].split("}",1)[0].strip()
+        #edit_text.set_text(read_data)
+        #print(f"load song, editer filled, dirty: {str(state['dirty'])}")
+        #state['dirty'] = False
+        mydirty = False
+        #print(f"load song, dirty reset, dirty: {str(state['dirty'])}")
+        #print(f"key: {state['key']}")
+        if state['key'] == "unknown":
+            print("try to guess key")
+            state['key'] = ChordPro.keyguess(self, read_data)
+            if state['key'] != "unknown":
+                read_data = f"{read_data}\n# key = {state['key']}\n\n"
+                mydirty = True
+            #state['dirty'] = True
+        edit_text.set_text(read_data)
+        mainkeysign.set_text(f"Key: {state['key']}/{state['offset']}")
+        mainsongsign.set_text(f" Song: {sname} ")
+        adj = webkitbox.get_hadjustment()
+        adj.set_value(0.0)
+        #print(f"end of load song, before chart refresh, dirty: {str(state['dirty'])}")
+        Handler.refreshChart(self)
+        state['dirty'] = mydirty
+        #print(f"end of load song, dirty: {str(state['dirty'])}")
+
+
+    def save_setlist(self):
+        global config
+        global lists_db
+        state = config['state']
+        # Save setlist
+        list_file = f"{state['config_path']}/setlist.json"
+        #print(f"List_file: {list_file}")
+        with open(list_file, 'w') as json_file:
+            if json_file.writable():
+                fcntl.lockf(json_file, fcntl.LOCK_EX)
+            json.dump(lists_db, json_file, indent=4)
+            json_file.write("\n")
+            json_file.flush()
+            os.fsync(json_file.fileno())
+            # Release the lock on the file.
+            if json_file.writable():
+                fcntl.lockf(json_file, fcntl.LOCK_UN)
+
+
+    def Save(self):
+        global config
+        global lists_db
+        state = config['state']
+        # this should get called any time we leave the settings page
+        # exit should check if settings are dirty and save if so
+        # (or ask to anyway)
+        #print(f"Asked to save {config}")
+        c_file = f"{state['config_path']}/{appname}.json"
+        #print("in config save")
+        #print(f"configs: {config}")
+        with open(c_file, 'w') as json_file:
+            #print("file open")
+            if json_file.writable():
+                #print("file writable")
+                fcntl.lockf(json_file, fcntl.LOCK_EX)
+                #print("file locked")
+            json.dump(config, json_file, indent=4)
+            #print("db dumped")
+            json_file.write("\n")
+            json_file.flush()
+            os.fsync(json_file.fileno())
+            # Release the lock on the file.
+            if json_file.writable():
+                fcntl.lockf(json_file, fcntl.LOCK_UN)
+
+    def save_webcss(self):
+        global config
+        state = config['state']
+        gen = config['general']
+        css_file = f"{state['config_path']}/chordpro.css"
+        sl = " {"
+        ft = " {\n\tfont-size: "
+        cl = "px;\n\tcolor: "
+        el = "\n\t}"
+        zm = float(config['webkit']['zoom'])/100
+        fnt = 16 * zm
+        # FIXME set hard line heights so tohtml can use them
+        # margins are what we need to set both table, tr and td
+        # maybe use max-height calculated against font size or zoom
+        css_str = "\n.doc {\n\ttable-layout: fixed;\n\talign-content: flex-start;\n\t}"
+        css_str = f"\n.pages{sl}{el}" # space holder for future use
+        css_str = f"{css_str}\n.page{sl}\n\tvertical-align: top;"
+        pgsz = config['general']['pagesize']
+        css_str = f"{css_str}\n\tmin-width: {pgsz}px;{el}"
+        for x in config['webkit']:
+            if not x == 'zoom':
+                fts = str(int(config['webkit'][x]['size'])/100 * fnt)
+                line = f"\n{x}{ft}{fts}{cl}{config['webkit'][x]['color']};{el}"
+                css_str = f"{css_str}{line}"
+        css_str = f"{css_str}\n\n"
+        with open(css_file, 'w', encoding="utf-8") as f:
+            f.write(css_str)
+
+    def showStatus(self, messg):
+        maininfo.set_text(f"{messg}")
+
+    def sethotkeys(self):
+        global config
+        hotdb = config['hotkeys']
+        # TODO Set accelerator
+        '''accel.connect(Gdk.keyval_from_name('O'),
+                Gdk.ModifierType.CONTROL_MASK, 0, self.on_accel_pressed)
+        self.add_accel_group(accel)
+        '''
+
+        '''
+        accelmap path MusicPager/pager/pagenx
+                                        pagebk
+                                        songnx
+                                        songbk
+                                        keyup
+                                        keydn
+
+        chrtPNxtBut #it doesn't seem I need to connect to a button
+        # just to the window
+        hotdb['pagenext']
+        chrtPBckBut
+        hotdb['pageback']
+        chrtSNxtBut
+        hotdb['songnext']
+        chrtSBckBut
+        hotdb['songback']
+        chrtKUpBut
+        hotdb['keyup']
+        chrtKDnBut
+        hotdb['keydown']
+
+        '''
+        #TODO change glade file so accellerators are not set from
+        # that file. Do this set up first ;)
+
+class FileChooserWindow(Gtk.Window):
+
+    def __init__(self):
+
+        super().__init__(title="choose Song file")
+
+        box = Gtk.Box(spacing=6)
+        self.add(box)
+        button1 = Gtk.Button(label="Choose File")
+        button1.connect("clicked", self.on_file_clicked)
+        box.add(button1)
+        button2 = Gtk.Button(label="Choose Folder")
+        button2.connect("clicked", self.on_folder_clicked)
+        box.add(button2)
+
+    def on_file_clicked(self, widget):
+        global config
+
+        dialog = Gtk.FileChooserDialog(
+            title="Please choose a file", parent=self, action=Gtk.FileChooserAction.OPEN
+        )
+
+        dialog.add_buttons(
+            Gtk.STOCK_CANCEL,
+            Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_OPEN,
+            Gtk.ResponseType.OK,
+
+        )
+        dialog.set_current_folder(config['general']['folder'])
+
+        self.add_filters(dialog)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+
+            #print("Open clicked")
+            newName = dialog.get_filename()
+
+            #print(f"File selected: {newName}.")
+
+        elif response == Gtk.ResponseType.CANCEL:
+
+            #print("Cancel clicked")
+            newName = "none"
+
+        dialog.destroy()
+        return newName
+
+    '''def file_save(self, widget):'''
+    def file_save(self):
+        global config
+        state = config['state']
+        dialog = Gtk.FileChooserDialog(
+            title="Please enter file", parent=self, action=Gtk.FileChooserAction.SAVE
+        )
+        dialog.add_buttons(
+            Gtk.STOCK_CANCEL,
+            Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_SAVE,
+            Gtk.ResponseType.OK,
+
+        )
+        dialog.set_filename(state['file'])
+        self.add_filters(dialog)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            #print("save clicked")
+            newName = dialog.get_filename()
+            #print("File selected: " + dialog.get_filename())
+            #print(f"File selected: {newName}.")
+        elif response == Gtk.ResponseType.CANCEL:
+            #print("Cancel clicked")
+            newName = "none"
+        dialog.destroy()
+        return newName
+
+
+    def add_filters(self, dialog):
+        filter_cho = Gtk.FileFilter()
+        filter_cho.set_name("Chordpro files")
+        filter_cho.add_pattern("*.cho")
+        filter_cho.add_mime_type("text/plain")
+        dialog.add_filter(filter_cho)
+        filter_text = Gtk.FileFilter()
+        filter_text.set_name("Text files")
+        filter_text.add_mime_type("text/plain")
+        dialog.add_filter(filter_text)
+        filter_any = Gtk.FileFilter()
+        filter_any.set_name("Any files")
+        filter_any.add_pattern("*")
+        dialog.add_filter(filter_any)
+
+
+    def on_folder_clicked(self, widget):
+        dialog = Gtk.FileChooserDialog(
+            title="Please choose a folder",
+            parent=self,
+            action=Gtk.FileChooserAction.SELECT_FOLDER,
+        )
+        dialog.add_buttons(
+            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, "Select", Gtk.ResponseType.OK
+        )
+        dialog.set_default_size(800, 400)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            newName = dialog.get_filename()
+        elif response == Gtk.ResponseType.CANCEL:
+            print("Cancel clicked")
+            newName = "none"
+        dialog.destroy()
+        return newName
+
+
+class Handler:
+    global config
+    global lists_db
+
+    def onDestroy(self, *args):
+        global config
+        if config['state']['dirty']:
+            self.askToSave()
+        # restore screen/battery saver
+        saver_interface.UnInhibit(blank)
+        Gtk.main_quit()
+
+    def onSizeCh(self, *args):
+        global config
+        state = config['state']
+        state['boxheight'] = str(webkitbox.get_allocated_height())
+        state['main_x'] = str(window.get_allocated_width())
+        state['main_y'] = str(window.get_allocated_height())
+        #print(f"New Height: {state['boxheight']}")
+        self.refreshChart()
+        UserConfig.Save(self)
+        return
+
+    #chartview navigation
+    def BackPressed(self, button):
+        global config
+        state = config['state']
+        pg = int(state['page'])
+        if pg > 1:
+            pg = pg - 1
+        else:
+            pg = 1
+        sz = int(config['general']['pagesize'])
+        newpos = float((pg - 1) * sz)
+        state['page'] = str(pg)
+        adj = webkitbox.get_hadjustment()
+        #newpos = adj.get_value() - adj.get_page_increment()
+        #print(f"Back pressed new pos: {str(newpos)}")
+        adj.set_value(newpos)
+
+    def ForwardPressed(self, button):
+        global config
+        state = config['state']
+        pg = int(state['page'])
+        num = int(state['pages'])
+        if pg < num:
+            pg = pg + 1
+        else:
+            pg = num
+        sz = int(config['general']['pagesize'])
+        #print(f"pages: {str(num)} page: {str(pg)}")
+        state['page'] = str(pg)
+        newpos = float((pg - 1) * sz)
+        adj = webkitbox.get_hadjustment()
+        #newpos = adj.get_value() - adj.get_page_increment()
+        #print(f"Forward pressed new pos: {str(newpos)}")
+        adj.set_value(newpos)
+
+    def keyup(self, button):
+        self.keychange(1)
+
+    def keydown(self, button):
+        self.keychange(-1)
+
+    def keychange(self, offset):
+        global config
+        global lists_db
+        state = config['state']
+        state['offset'] = str(int(state['offset']) + offset)
+        if int(state['list']) > 0:
+            song_db = lists_db[state['list']]['songs'][state['song']]
+            song_db['offset'] = state['offset']
+        self.refreshChart()
+        UserConfig.fillsonglist(self)
+        UserConfig.save_setlist(self)
+        mainkeysign.set_text(f"Key: {state['key']}/{state['offset']}")
+
+
+    def PrevSongPressed(self, button):
+        global config
+        global lists_db
+        state = config['state']
+        if int(state['list']) == 0:
+            UserConfig.showStatus(self, "No List Loaded")
+            return
+        if state['dirty']:
+            self.askToSave()
+        if int(state['song']) < 2:
+            UserConfig.showStatus(self, "Already At First Song")
+            return
+        our_db = lists_db[state['list']]['songs']
+        new = str(int(state['song']) - 1)
+        state['song'] = new
+        state['file'] = our_db[new]['file']
+        UserConfig.loadsong(self)
+        no = len(our_db)
+        UserConfig.showStatus(self, f"Song {new} of {str(no)}")
+
+
+    def NextSongPressed(self, button):
+        global config
+        global lists_db
+        state = config['state']
+        if int(state['list']) == 0:
+            UserConfig.showStatus(self, "No List Loaded")
+            return
+        if state['dirty']:
+            self.askToSave()
+        our_db = lists_db[state['list']]['songs']
+        new = str(int(state['song']) + 1)
+        no = len(our_db)
+        if int(new) > no:
+            UserConfig.showStatus(self, "Already At Last Song")
+            return
+        state['song'] = new
+        state['file'] = our_db[new]['file']
+        UserConfig.loadsong(self)
+        UserConfig.showStatus(self, f"Song {new} of {str(no)}")
+
+    def text_changed(self, widget):
+        global config
+        config['state']['dirty'] = True
+
+    def askToSave(self):
+        global config
+        #print(f"Asktosave find dirty is: {str(config['state']['dirty'])}")
+        #return
+        state = config['state']
+        dialog = notSavedDialog(window)
+        response = dialog.run()
+        if response == Gtk.ResponseType.CANCEL:
+            UserConfig.showStatus(self, "Song not saved")
+            dialog.destroy()
+            return
+        dialog.destroy()
+        self.songsaveas()
+        UserConfig.showStatus(self, "Set List Removed")
+
+
+    # main window
+    def NbookPageChanged(self, widget, child, new_index):
+        global settingvisit
+        self.savedirty = False
+        if settingvisit and (new_index != 3):
+            cnfctl.Save()
+        if (new_index == 0) or (new_index ==4):
+            self.refreshChart()
+        elif (new_index == 3):
+            settingvisit = True
+
+    def refreshChart(self):
+        global config
+        state = config['state']
+        web = config['webkit']
+        gen = config['general']
+        # take editer_buffer and make chart
+        edtxst = edit_text.get_start_iter()
+        edtxend = edit_text.get_end_iter()
+        pageStr = edit_text.get_text(edtxst, edtxend, False)
+        ofst = state['offset']
+        boxht = int(state['boxheight'])
+        newhtml = ChordPro.toHtml(self, config, pageStr, boxht, ofst, False)
+        bwidth = (int(state['pages']) + 1) * int(config['general']['pagesize'])
+        webbigBox.set_size_request (bwidth, int(state['boxheight']))
+        # clear cache so that new css will be read
+        ctxt = wview.get_context()
+        ctxt.clear_cache()
+        # Load HTML and CSS
+        wview.load_html(newhtml, f"file://{state['config_path']}/")
+
+
+    def LdSongPressed(self, button):
+        global config
+        if config['state']['dirty']:
+            self.askToSave()
+        config['state']['file'] = getfilename.on_file_clicked(button)
+        if config['state']['file'] == "none":
+            return
+        UserConfig.loadsong(self)
+
+    # Editor page callbacks
+    def editsavepress(self, button):
+        global config
+        state = config['state']
+        #print(f"save pressed with file: {state['file']}")
+        if "none" in state['file']:
+            self.songsaveas()
+            if "none" in state['file']:
+                UserConfig.showStatus(self, "Save Abandoned")
+                return
+        edtxst = edit_text.get_start_iter()
+        edtxend = edit_text.get_end_iter()
+        with open(state['file'], 'w', encoding="utf-8") as f:
+            f.write(edit_text.get_text(edtxst, edtxend, False ))
+        UserConfig.showStatus(self, f"Saved to {state['file']}")
+        state['dirty'] = False
+
+
+    def editsaveas(self, button):
+        self.songsaveas()
+
+    def songsaveas(self):
+        global config
+        state = config['state']
+        state['file'] = getfilename.file_save()
+        #print(f"filename to save: {state['file']}")
+        if "none" in state['file']:
+            UserConfig.showStatus(self, "Save Abandoned")
+            return
+        edtxst = edit_text.get_start_iter()
+        edtxend = edit_text.get_end_iter()
+        with open(state['file'], 'w', encoding="utf-8") as f:
+            f.write(edit_text.get_text(edtxst, edtxend, False ))
+        UserConfig.showStatus(self, f"Saved To {state['file']}")
+        state['dirty'] = False
+
+
+    def CreateSong(self, button):
+        global config
+        state = config['state']
+        state['file'] = f"{config['general']['folder']}/newsong.txt"
+        state['key'] = "unknown"
+        state['song'] = "0" # song number in list
+        state['list'] = "0" # current list number
+        state['offset'] = "0"
+        newtext = "{title: edit me}\n{subtitle: put author here}"
+        newtext2 = "\n{key: unknown}\n\n{c: Verse}\n\n"
+        newtext = f"{newtext}{newtext2}"
+        mainkeysign.set_text(f"Key: {state['key']}/{state['offset']}")
+        mainsongsign.set_text(" Song: New Song ")
+        setlistlabel.set_text("Current Set List: None")
+        edit_text.set_text(newtext)
+        adj = webkitbox.get_hadjustment()
+        adj.set_value(0.0)
+        Handler.refreshChart(self)
+        UserConfig.fillsonglist(self)
+        state['dirty'] = True
+
+
+    # set lists call backs
+    def ListNewPress(self, button):
+        # create a new list
+        global config
+        global lists_db
+        state = config['state']
+        dialog = NewSetDialog(self)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            dnewname = newsetbuff.get_text()
+        elif response == Gtk.ResponseType.CANCEL:
+            UserConfig.showStatus(self, "New List Cancelled")
+            dialog.destroy()
+            return
+        dialog.destroy()
+        #print(f"new list:{dnewname}")
+        no_of_list = len(lists_db)
+        if no_of_list == 0:
+            list_idx = str(1)
+        else:
+            list_idx = str(no_of_list + 1)
+        # create new set list
+        state['list'] = list_idx
+        lists_db[state['list']] = {
+            'listname': dnewname,
+            'songs': {}
+        }
+        setlistlabel.set_text(f"Current Set List: {dnewname}")
+        setselecter.append(str(list_idx), dnewname)
+        setselecter.set_active_id(str(list_idx))
+        #print(f"new list all set")
+        UserConfig.save_setlist(self)
+        #print(f"new list all done")
+        UserConfig.showStatus(self, f"Set List: {dnewname} created")
+
+
+    def textchanged(self, widget):
+        global config
+        #print("dirty set in text changed")
+        config['state']['dirty'] = True
+
+
+    def RemoveList(self, widget):
+        global config
+        global lists_db
+        state = config['state']
+        dialog = OKCancelDialog(window)
+        response = dialog.run()
+        if response == Gtk.ResponseType.CANCEL:
+            UserConfig.showStatus(self, "Remove Set List Cancelled")
+            dialog.destroy()
+            return
+        dialog.destroy()
+        no = len(lists_db)
+        for x in range(int(state['list']), no):
+            next_list = str(x + 1)
+            next_db = lists_db[next_list].copy()
+            lists_db[str(x)] = next_db
+        lists_db.pop(str(no))
+        #print(f"number of lists now: {str(len(lists_db))}")
+        state['list'] = "0"
+        setlistlabel.set_text(f"Current Set List: None")
+        setselecter.set_active_id("0")
+        UserConfig.fillsonglist(self)
+        UserConfig.save_setlist(self)
+        UserConfig.setselectfix(self)
+        UserConfig.showStatus(self, "Set List Removed")
+
+
+    def RenameListPressed(self, widget):
+        global config
+        global lists_db
+        state = config['state']
+        dialog = NewSetDialog(self)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            dnewname = newsetbuff.get_text()
+        elif response == Gtk.ResponseType.CANCEL:
+            UserConfig.showStatus(self, "Set List Rename Cancelled")
+            dialog.destroy()
+            return
+        dialog.destroy()
+        lists_db[state['list']]['listname'] = dnewname
+        UserConfig.save_setlist(self)
+        UserConfig.setselectfix(self)
+        UserConfig.showStatus(self, f"Set List Renamed To: {dnewname}")
+
+
+    def SetSelected(self, widget):
+        global config
+        global lists_db
+        if not widget.get_sensitive():
+            # print(f"Widget sensitivity: {str(widget.get_sensitive())}")
+            return
+        state = config['state']
+        # Selected a set list
+        state['list'] = widget.get_active_id()
+        state['song'] = '1'
+        newname = widget.get_active_text()
+        #print(f"setselected:{state['list']}: {newname}")
+        setlistlabel.set_text(f"Current Set List: {newname}")
+        UserConfig.fillsonglist(self)
+        if state['list'] == '0' or not "1" in lists_db[state['list']]['songs']:
+            UserConfig.showStatus(self, "Empty Set List")
+            print("in list = 0 or empty list")
+            state['song'] = '0'
+            state['file'] = "none"
+        else:
+            our_db = lists_db[state['list']]['songs']
+            #print(f"setselected:{state['list']}: {newname}")
+            state['file'] = our_db[state['song']]['file']
+        UserConfig.loadsong(self)
+
+
+    def listsongselected(self, widget, row):
+        global config
+        global lists_db
+        state = config['state']
+        # A song was selected from the list
+        if row == None:
+            return
+        idx = row.get_index() + 1
+        state['song'] = str(idx)
+        our_db = lists_db[state['list']]['songs'][str(idx)]
+        state['file'] = our_db['file']
+        UserConfig.loadsong(self)
+
+
+    def ListAdd(self, button):
+        global config
+        global lists_db
+        state = config['state']
+        # Add a song to the list
+        placeholder = "blank"
+        our_db = lists_db[state['list']]['songs']
+        this_idx = str(len(our_db) + 1)
+        song_file = getfilename.on_file_clicked(button)
+        with open(song_file, encoding="utf-8") as f:
+            read_data = f.read()
+        if read_data.lower().find("# trans") == -1:
+            os = '0'
+        else:
+            os1 = read_data[read_data.lower().find("# transpose = ") + 14:]
+            os = os1.split("\n",1)[0].strip()
+        our_db[this_idx] = {
+            'file': song_file,
+            'offset': os
+        }
+        UserConfig.save_setlist(self)
+        UserConfig.fillsonglist(self)
+
+
+    def ListRemoveSong(self, widget):
+        global config
+        global lists_db
+        state = config['state']
+        if state['list'] == '0':
+            print("no list selected")
+            return
+        if state['song'] == '0':
+            print("no selected song")
+            return
+        our_db = lists_db[state['list']]['songs']
+        no = len(our_db)
+        if no == 1:
+            #print("only one song")
+            our_db.pop(str(no))
+            state['song'] = '0'
+            state['file'] = "none"
+        else:
+            #print(f"remove Song no: {state['song']} out of: {no}")
+            for x in range(int(state['song']), no):
+                next_song = str(x + 1)
+                next_db = our_db[next_song].copy()
+                our_db[str(x)] = next_db
+                #print(f"Replace this song: {str(x)} with {str(x+1)}")
+            #print(f"remove: {str(no)}")
+            our_db.pop(str(no))
+            if int(state['song']) == no:
+                state['song'] = str(no - 1)
+            state['file'] = our_db[state['song']]['file']
+            #print(f" New current song: {state['file']}")
+        UserConfig.fillsonglist(self)
+        UserConfig.save_setlist(self)
+        UserConfig.loadsong(self)
+
+
+    def listSongDown(self, widget):
+        global config
+        global lists_db
+        state = config['state']
+        our_db = lists_db[state['list']]['songs']
+        csng = int(state['song'])
+        clen = len(our_db)
+        if csng < 1 or (csng > (clen - 1)):
+            print("out of range for operation")
+            return
+        this_db = our_db[state['song']].copy()
+        next_song = str(int(state['song']) + 1)
+        next_db = our_db[next_song].copy()
+        our_db[next_song] = this_db
+        our_db[state['song']] = next_db
+        state['song'] = next_song
+        UserConfig.fillsonglist(self)
+        UserConfig.save_setlist(self)
+        #print("list song down button")
+
+
+    def listSongUp(self, widget):
+        global config
+        global lists_db
+        state = config['state']
+        our_db = lists_db[state['list']]['songs']
+        csng = int(state['song'])
+        clen = len(our_db)
+        if csng < 2 or (csng > (clen)):
+            print("out of range for operation")
+            return
+        this_db = our_db[state['song']].copy()
+        next_song = str(int(state['song']) - 1)
+        next_db = our_db[next_song].copy()
+        our_db[next_song] = this_db
+        our_db[state['song']] = next_db
+        state['song'] = next_song
+        UserConfig.fillsonglist(self)
+        UserConfig.save_setlist(self)
+
+
+    # Settings
+    def stylechanged(self, widget):
+        global config
+        # print("style changed entered")
+        if not widget.get_sensitive():
+            # print(f"Widget sensitivity: {str(widget.get_sensitive())}")
+            return
+        # print("settings style changed")
+        webdb = config['webkit']
+        webdb['zoom'] = str(stylezoom.get_value_as_int())
+        # print(f"zoom: {str(stylezoom.get_value_as_int())}")
+        webdb['.title']['size'] = str(styletitlesz.get_value_as_int())
+        webdb['.subtitle']['size'] = str(stylesubtsz.get_value_as_int())
+        webdb['.chords']['size'] = str(stylechordsz.get_value_as_int())
+        webdb['.lyrics']['size'] = str(stylelyricsz.get_value_as_int())
+        webdb['.comment']['size'] = str(stylecommentsz.get_value_as_int())
+        webdb['.title']['color'] = styletitleclr.get_active_id()
+        webdb['.subtitle']['color'] = stylesubtclr.get_active_id()
+        webdb['.chords']['color'] = stylechordclr.get_active_id()
+        webdb['.lyrics']['color'] = stylelyricclr.get_active_id()
+        webdb['.comment']['color'] = stylecommentclr.get_active_id()
+        config['general']['pagesize'] = str(int(450 * int(webdb['zoom']) / 100))
+        #print(webdb)
+        #print("about to save config")
+        UserConfig.Save(self)
+        #print("about to save web css")
+        UserConfig.save_webcss(self)
+        #print("now refresh chart")
+        self.refreshChart()
+
+    def hKeychange(self, wiget):
+        global config
+        if not widget.get_sensitive():
+            return
+        print("hot key change")
+        hotdb = config['hotkeys']
+        hotdb['pagenext'] = accPfwd.get_text()
+        hotdb['pageback'] = accPbck.get_text()
+        hotdb['songnext'] = accSnxt.get_text()
+        hotdb['songback'] = accSbck.get_text()
+        hotdb['keydown'] = accKup.get_text()
+        hotdb['keyup'] = accKdn.get_text()
+        UserConfig.sethotkeys(self)
+
+
+    def baseFolder(self, widget):
+        global config
+        new_fldr = getfilename.on_folder_clicked(widget)
+        config['general']['folder'] = new_fldr
+        UserConfig.Save(self)
+        folderEntry.set_text(new_fldr)
+
+    def basefldrentry(self, widget):
+        global config
+        new_fldr = widget.get_text()
+        config['general']['folder'] = new_fldr
+        UserConfig.Save(self)
+
+    def subfolderdepth(self, widget):
+        global config
+        depth = widget.get_value_as_int()
+        config['general']['folderdepth'] = depth
+        UserConfig.Save(self)
+
+
+# this code initializes stuff
+# I expect the right way would be to include this in a class
+global appname
+global config
+global settingvisit
+settingvisit = False
+
+appname = "musicpager"
+
+# set up our glade file
+#print(f"install path: {install_path}")
+builder = Gtk.Builder()
+builder.add_from_file(f"{install_path}/share/{appname}/{appname}.glade")
+builder.connect_signals(Handler())
+# bring objects from glade file into our space and set them up
+
+#main window
+window = builder.get_object("window_1")
+nbook = builder.get_object("Nbook_id")
+setlistlabel = builder.get_object("mainSetList")
+mainkeysign = builder.get_object("mainkeysign")
+mainsongsign = builder.get_object("MainSongSign")
+maininfo = builder.get_object("MainInfo")
+accel = Gtk.AccelGroup()
+window.set_default_icon_name('musicpager')
+window.set_title('Music Pager')
+
+#editor
+edit_text = builder.get_object("editor_buffer")
+edtexwin = builder.get_object("edTexWin")
+
+# webkit display
+# scroller for web display so we can page
+webkitbox = builder.get_object("WebKitholder")
+# big enough box to make webkit2 not self scroll.
+webbigBox = builder.get_object("bigBox")
+# box (window?) to attach accelorators to
+pagebox = builder.get_object("pagebox")
+#control buttons... not sure I need this for
+# accellerators will try pagebox first
+
+#setlist
+songlist = builder.get_object("songlist")
+newsetbuff = builder.get_object("NewSetBuff") # Buffer for dialog
+setselecter = builder.get_object("setSelecter") #set select dropdown
+
+#settings
+stylezoom = builder.get_object("chartzoom")
+styletitlesz = builder.get_object("styletitlesz")
+stylesubtsz = builder.get_object("stylesubtsz")
+stylechordsz = builder.get_object("stylechordsz")
+stylelyricsz = builder.get_object("stylelyricsz")
+stylecommentsz = builder.get_object("stylecommentsz")
+styletitleclr = builder.get_object("styletitleclr")
+stylesubtclr = builder.get_object("stylesubtclr")
+stylechordclr = builder.get_object("stylechordclr")
+stylelyricclr = builder.get_object("stylelyricclr")
+stylecommentclr = builder.get_object("stylecommentclr")
+ChartStyle = builder.get_object("ChartStyle")
+folderEntry = builder.get_object("setbasefolder")
+folderdepth = builder.get_object("FolderDepth")
+accPfwd = builder.get_object("accPfwd")
+accPbck = builder.get_object("accPbck")
+accSnxt = builder.get_object("accSnxt")
+accSbck = builder.get_object("accSbck")
+accKup = builder.get_object("accKup")
+accKdn = builder.get_object("accKdn")
+
+
+cnfctl = UserConfig()
+def gtk_style():
+    css = b"""
+* {
+    transition-property: color, background-color, border-color, background-image, padding, border-width;
+    transition-duration: 1s;
+    font-family: Cantarell;
+    font-size: 22px;
+}
+window {
+    background-color: #999999;
+}
+textview.view {
+    font-family: Cantarell;
+    font-size: 32px;
+}
+textview text {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+        """
+    style_provider = Gtk.CssProvider()
+    style_provider.load_from_data(css)
+
+    Gtk.StyleContext.add_provider_for_screen(
+        Gdk.Screen.get_default(),
+        style_provider,
+        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+    )
+
+gtk_style()
+# need to set default setup values
+#window_x = 1900
+#window_y = 1000
+window_x = int(config['state']['main_x'])
+window_y = int(config['state']['main_y'])
+# need to read in config file if there is one
+# size should be set in settings so we can save it for next time.
+window.set_default_size(window_x, window_y)
+# glade doesn't have webview so add it here
+wview = WebKit2.WebView()
+# pack it in a big box so we can scroll
+webbigBox.pack_start(wview, True, True, 0)
+# pointer to show a file chooser dialog
+getfilename = FileChooserWindow()
+
+bus = dbus.SessionBus()
+saver = bus.get_object('org.freedesktop.ScreenSaver', '/ScreenSaver')
+saver_interface = dbus.Interface(saver, dbus_interface='org.freedesktop.ScreenSaver')
+
+# now we can inhibit the screensaver
+# should this only be active when pager box is visible?
+# (might save battery)
+blank=saver_interface.Inhibit(appname, "So I can read the music")
+
+# put our window on the screen
+window.show_all()
+
+#start main loop
+Gtk.main()
+

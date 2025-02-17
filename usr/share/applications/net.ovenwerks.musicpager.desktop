@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=Music Pager
+Categories=Display;Utility;Music;AudioVideo;
+Comment=Display Music Chord Charts
+Exec=musicpager
+GenericName=Music Pager
+Icon=musicpager
+Keywords=music;notation;composition;sheet music;music notation software;chord chart;chordchart;score;chordpro;
+StartupNotify=true
+Terminal=false
+Type=Application

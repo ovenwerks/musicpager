@@ -1,0 +1,17 @@
+Music Pager
+
+An application For performing musicians that displays chord charts
+and allows page turning for multiple pages. The input files are
+expected to be chordpro formatted. See www.chordpro.org for more
+details of file format. The chordpro utility from this site is also
+very useful for turning chordpro files into PDF files and converting
+text files with chord over lyrics to chordpro files.... though some
+hand editing may be needed.
+
+Musicpager do not support all chordpro directives yet but more will
+be added as we go. However, it seems that most downloadable chordpro
+files display in a usable fashion.
+
+See the INSTALL file for instalation instructions
+
+Home Page: https://someday we will add this

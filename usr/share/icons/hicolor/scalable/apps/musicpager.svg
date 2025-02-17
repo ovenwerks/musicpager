@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="512.0px"
+   height="512.0px"
+   viewBox="0 0 512.0 512.0"
+   version="1.1"
+   id="SVGRoot"
+   sodipodi:docname="musicpager.svg"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   inkscape:export-filename="../../16x16/apps/musicpager.png"
+   inkscape:export-xdpi="3"
+   inkscape:export-ydpi="3"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1292"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     showgrid="true"
+     inkscape:zoom="1.42"
+     inkscape:cx="126.05634"
+     inkscape:cy="256.69014"
+     inkscape:window-width="1600"
+     inkscape:window-height="840"
+     inkscape:window-x="0"
+     inkscape:window-y="36"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer2">
+    <inkscape:grid
+       type="xygrid"
+       id="grid1298" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1287" />
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="Layer 2">
+    <rect
+       style="fill:#f9f9f9"
+       id="rect1389"
+       width="453.52115"
+       height="443.66196"
+       x="21.12676"
+       y="31.690142"
+       ry="0" />
+  </g>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     style="display:inline">
+    <path
+       style="fill:#0000ff;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 14,488 V 28 l 450,-2 v 10 l -440,4 2,448 z"
+       id="path1309" />
+    <path
+       style="fill:#d40055;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 23,486 462,2 -2,-460 h -32 l -4,428 -422,-2 z"
+       id="path1451" />
+    <text
+       xml:space="preserve"
+       style="font-size:50.9428px;fill:#220b28;stroke-width:4.24522"
+       x="142.85211"
+       y="79.3424"
+       id="text2224"
+       transform="scale(0.83335146,1.1999739)"><tspan
+         sodipodi:role="line"
+         id="tspan2222"
+         x="142.85211"
+         y="79.3424"
+         style="stroke-width:4.24522">Music Pager</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:58.9623px;fill:#220b28;stroke-width:4.91352"
+       x="48.832928"
+       y="159.86247"
+       id="text2228"
+       transform="scale(1.0688256,0.93560634)"><tspan
+         sodipodi:role="line"
+         id="tspan2226"
+         x="48.832928"
+         y="159.86247"
+         style="stroke-width:4.91352">c</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:42.4438px;fill:#220b28;stroke-width:3.53699"
+       x="64.794258"
+       y="155.5643"
+       id="text2232"
+       transform="scale(0.78599585,1.2722713)"><tspan
+         sodipodi:role="line"
+         id="tspan2230"
+         x="64.794258"
+         y="155.5643"
+         style="stroke-width:3.53699">Lyrics to sing along</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:43.2686px;fill:#220b28;stroke-width:3.60573"
+       x="300.04489"
+       y="134.47987"
+       id="text2286"
+       transform="scale(0.8965326,1.1154084)"><tspan
+         sodipodi:role="line"
+         id="tspan2284"
+         x="300.04489"
+         y="134.47987"
+         style="stroke-width:3.60573">Am</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:46.4668px;fill:#220b28;stroke-width:3.87223"
+       x="63.107346"
+       y="220.21838"
+       id="text2290"
+       transform="scale(0.86022809,1.1624824)"><tspan
+         sodipodi:role="line"
+         id="tspan2288"
+         x="63.107346"
+         y="220.21838"
+         style="stroke-width:3.87223">D</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:47.2781px;fill:#220b28;stroke-width:3.93985"
+       x="66.970367"
+       y="244.88022"
+       id="text2294"
+       transform="scale(0.79111699,1.2640356)"><tspan
+         sodipodi:role="line"
+         id="tspan2292"
+         x="66.970367"
+         y="244.88022"
+         style="stroke-width:3.93985">Joyful singing is good</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:49.1698px;fill:#220b28;stroke-width:4.09747"
+       x="366.61365"
+       y="244.20416"
+       id="text2298"
+       transform="scale(0.92997812,1.0752941)"><tspan
+         sodipodi:role="line"
+         id="tspan2296"
+         x="366.61365"
+         y="244.20416"
+         style="stroke-width:4.09747">G</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:43.2143px;fill:#220b28;stroke-width:3.6012"
+       x="57.201336"
+       y="354.32849"
+       id="text2302"
+       transform="scale(0.94740257,1.0555175)"><tspan
+         sodipodi:role="line"
+         id="tspan2300"
+         x="57.201336"
+         y="354.32849"
+         style="stroke-width:3.6012">Em</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:47.9757px;fill:#220b28;stroke-width:3.99795"
+       x="66.157463"
+       y="349.85788"
+       id="text2306"
+       transform="scale(0.82716541,1.208948)"><tspan
+         sodipodi:role="line"
+         id="tspan2304"
+         x="66.157463"
+         y="349.85788"
+         style="stroke-width:3.99795">Turn the Page</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:41.7419px;fill:#220b28;stroke-width:3.47848"
+       x="226.32011"
+       y="346.16129"
+       id="text2310"
+       transform="scale(0.93387235,1.0708102)"><tspan
+         sodipodi:role="line"
+         id="tspan2308"
+         x="226.32011"
+         y="346.16129"
+         style="stroke-width:3.47848">G</tspan></text>
+    <path
+       style="fill:#800033;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 447,354 c 0,0 -19.13125,10.61622 -36,20 -16.86875,9.38378 -46,10 -46,10 0,0 4.70527,18.96033 0,44 -4.70527,25.03967 -10,30 -10,30 z"
+       id="path2381"
+       sodipodi:nodetypes="czczcc" />
+    <path
+       style="fill:#e9afdd"
+       d="m 400.75,454.75032 c -22.1375,-0.15015 -40.25,-0.50251 -40.25,-0.78301 0,-0.2805 18.97273,-21.9879 42.16163,-48.23866 23.1889,-26.25076 42.5389,-48.15615 43,-48.67865 0.46111,-0.5225 0.83837,21.415 0.83837,48.75 v 49.7 l -2.75,-0.23833 c -1.5125,-0.13109 -20.8625,-0.36119 -43,-0.51135 z"
+       id="path2826" />
+  </g>
+</svg>

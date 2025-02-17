@@ -1,0 +1,94 @@
+
+ This is Notes about developing this application, known bugs and
+ features to add. It is generally in order of importance... or at
+ least order to be worked on. (some later things rely on sooner
+ things)
+
+Features we want:
+ - Improve editor
+     - Edit in current key but save in default key
+     - Allow Change default key
+        Means save to crd file in new key, this may be easier than
+        than saving back to default key but should always be
+        "Save As" because many song files will use the key as part
+        of the file name.
+
+ - allow single instance of chorus or other part to show more than once.
+    - Allow order list
+    - Allow sidebar (or top) TOC for instant switching to part (add hot keys)
+    - Allow defining parts
+         - use meta tags for verse/chorus/bridge
+            - use recognized {c: } comments... maybe add conversion
+    - or... allow back to go back to page with chorus, then forward to
+        place in song before going back. Or both but this may be easier
+        to implement first and would sure be nice.
+
+ - List songs as either filenames or by title or author or first line
+    for song selection purposes. Would need inteligent saving
+    - title and first line could show together
+    - show in alphabetical order
+
+ - print to PDF
+    - probably with html to pdf
+    - so add many options to html converter:
+        - Lyrics only
+        - Long format (all choruses in line)
+        - Short format
+        - print chord boxes or not
+        - print/show bass version
+ - Import PDFs
+    - This is a nightmare as some pdfs are images while others have
+        raw text. Each type of pdf will need to be detected:
+        - Image. seems hopeless but we should be able to have an editor
+            that breaks the pdf into:
+                - front page header
+                - sections: verses, chorus(es), etc.
+            these images can then be inserted into html for display.
+            we could possibly use this for direct to pager use.
+            I do not know if OCR libs would allow keeping chord to
+            lyric alignment or even current spacing intact.
+        - Chords over lyrics - needs dekerning. Many chords over lyrics
+            do not use monospace fonts to allow lining up the chord
+            line to the lyric line which would make conversion to
+            crd easier. Hopefully any pdf lib we use would allow
+            other tricks to be used to "table" them.
+        - Tabled. If we can truely detect this, we should be able to
+            convert to crd. Lots of work and probably a whole lib.
+            most PDF charts I have found in the wild (that are not
+            scans/images) are tabled but most pdf to text utilities
+            just show the list of table data sections with no end of
+            table row indication. I am hoping using a pdf lib
+            directly will give this info.
+        - While chord over lyrics or tabled could be displayed
+            directly, this is suboptimal. Converting to chordpro
+            would allow the user to edit, save, change the default
+            key, change keys on the fly.
+    - At least allow inserting a pdf in a setlist and paging it
+        - allow editing into smaller pages of verse and chorus
+        - pypdf can crop pdfs to smaller ones maybe at least to verses,
+            chorus, intro, bridge etc. These can then be windowed using
+            the flow widget in a scroller as html.
+
+ - import docx, odt, etc.  Maybe later, this is just an idea but many
+    people do not have any understanding of the difference between
+    a text editor, document processor, mono space or kerned fonts, etc.
+    making this conversion less easy.
+    - check catdoc docx2txt pandoc antiword
+        these are utilities for dealing with doc/docx file
+     - All of these import ideas could use some sort of de-kern of
+        spaces in the chord line 32spaces equals 20 spaces? 10:16... so
+        count spaces and divide by 1.6?
+ - network
+    - add webserver that follows server's paging. So that a number of
+        people can follow the same chart on their phone. This is
+        complex requiring a dhcp server, nameserver, or zero(whatever)
+        setup as well as the web server that has to allow
+        multi-directional comunication so that anyone can push page
+        changes and song change (hopefully only one person at a time)
+        - allow browser to select keys for setlist
+        - allow browser to show capo for user. Or kb player to set an
+            odd key where they are transposed to. While at the same time
+            allowing to change over all key.
+        - allow another instance to send/receive songs and setlists
+        - allow another instance to send/receive paging
+
