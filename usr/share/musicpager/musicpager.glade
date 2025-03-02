@@ -218,7 +218,6 @@
                         <property name="receives-default">True</property>
                         <signal name="activate" handler="BackPressed" swapped="no"/>
                         <signal name="pressed" handler="BackPressed" swapped="no"/>
-                        <accelerator key="a" signal="activate"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -234,7 +233,6 @@
                         <property name="receives-default">True</property>
                         <signal name="activate" handler="PrevSongPressed" swapped="no"/>
                         <signal name="pressed" handler="PrevSongPressed" swapped="no"/>
-                        <accelerator key="comma" signal="activate"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -249,7 +247,6 @@
                         <property name="can-focus">True</property>
                         <property name="receives-default">True</property>
                         <signal name="clicked" handler="keyup" swapped="no"/>
-                        <accelerator key="6" signal="clicked"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -264,7 +261,6 @@
                         <property name="can-focus">True</property>
                         <property name="receives-default">True</property>
                         <signal name="clicked" handler="keydown" swapped="no"/>
-                        <accelerator key="v" signal="clicked"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -280,7 +276,6 @@
                         <property name="receives-default">True</property>
                         <signal name="activate" handler="ForwardPressed" swapped="no"/>
                         <signal name="pressed" handler="ForwardPressed" swapped="no"/>
-                        <accelerator key="c" signal="activate"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -297,7 +292,6 @@
                         <property name="receives-default">True</property>
                         <signal name="activate" handler="NextSongPressed" swapped="no"/>
                         <signal name="pressed" handler="NextSongPressed" swapped="no"/>
-                        <accelerator key="b" signal="activate"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>

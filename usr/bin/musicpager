@@ -39,7 +39,7 @@ gi.require_version('WebKit2', '4.1')
 
 from gi.repository import Gtk, Gdk, Pango, WebKit2
 
-# the auto_jack module might be in local in some cases
+# any module might be in local in some cases
 global install_path
 install_path = os.path.abspath(f"{sys.path[0]}/..")
 #sys.path.insert(1, f"{install_path}/lib/python3/dist-packages")
@@ -256,14 +256,15 @@ class ChordPro():
         will produce just one column for printing, otherwise we want
         any one column to fit the widget height'''
         # top of file
+        state = R_db['state']
         hfile = '<html>\n<head>\n<meta charset="utf-8">\n'
         hfile = f'{hfile}<link rel="stylesheet" href="chordpro.css">'
         hfile = f"{hfile}\n</head>\n<body>"
         hfile = f'{hfile}\n<table class="doc"><tr class="pages">'
-        winht = int(R_db['state']['boxheight'])
+        winht = int(state['boxheight'])
         key = 'A'
         height = 0.0
-        R_db['state']['pages'] = '1'
+        state['pages'] = '1'
         pagetop = False
         titl = True
         buf = io.StringIO(strng)
@@ -273,10 +274,12 @@ class ChordPro():
                 hfile = f'{hfile}\n</td>'
                 pagetop = False
                 height = 0.0
-                R_db['state']['pages'] = str(int(R_db['state']['pages']) + 1)
+                state['pages'] = str(int(state['pages']) + 1)
             if not pagetop:
                 hfile = f'{hfile}\n<td class="page">'
                 pagetop = True
+            # TODO separate out lines that  start with "{" so that
+            # dealing with new directives is easier
             if '{t' in line and titl:
                 st = line.find(":") + 1
                 end = line.find("}")
@@ -754,9 +757,6 @@ class UserConfig():
         global lists_db
         state = config['state']
         # this should get called any time we leave the settings page
-        # exit should check if settings are dirty and save if so
-        # (or ask to anyway)
-        #print(f"Asked to save {config}")
         c_file = f"{state['config_path']}/{appname}.json"
         #print("in config save")
         #print(f"configs: {config}")
@@ -789,6 +789,7 @@ class UserConfig():
         # FIXME set hard line heights so tohtml can use them
         # margins are what we need to set both table, tr and td
         # maybe use max-height calculated against font size or zoom
+        # FIXME change these param names to no dot. Add dot here.
         css_str = "\n.doc {\n\ttable-layout: fixed;\n\talign-content: flex-start;\n\t}"
         css_str = f"\n.pages{sl}{el}" # space holder for future use
         css_str = f"{css_str}\n.page{sl}\n\tvertical-align: top;"
@@ -806,40 +807,74 @@ class UserConfig():
     def showStatus(self, messg):
         maininfo.set_text(f"{messg}")
 
+    def forEach(data1, path, key, mod, chng):
+        print(f"path: {str(path)} key: {str(key)}")
+
     def sethotkeys(self):
         global config
-        hotdb = config['hotkeys']
+        #return
+        hot = config['hotkeys']
         # TODO Set accelerator
-        '''accel.connect(Gdk.keyval_from_name('O'),
-                Gdk.ModifierType.CONTROL_MASK, 0, self.on_accel_pressed)
-        self.add_accel_group(accel)
-        '''
+        window.add_accel_group(accelgrp)
+        Gtk.AccelMap.change_entry(
+            "<musicpager>/cht/pagebk",
+            Gdk.keyval_from_name(hot['pageback']),
+            0,
+            True)
+        Gtk.AccelMap.change_entry(
+            "<musicpager>/cht/pagenx",
+            Gdk.keyval_from_name(hot['pagenext']),
+            0,
+            True)
+        Gtk.AccelMap.change_entry(
+            "<musicpager>/cht/songbk",
+            Gdk.keyval_from_name(hot['songback']),
+            0,
+            True)
+        Gtk.AccelMap.change_entry(
+            "<musicpager>/cht/songnx",
+            Gdk.keyval_from_name(hot['songnext']),
+            0,
+            True)
+        Gtk.AccelMap.change_entry(
+            "<musicpager>/cht/keyup",
+            Gdk.keyval_from_name(hot['keyup']),
+            0,
+            True)
+        print(f"songback: {hot['songback']}")
+        print(f"keycode: {str(Gdk.keyval_from_name(hot['songback']))}")
+        Gtk.AccelMap.change_entry(
+            "<musicpager>/cht/keydn",
+            Gdk.keyval_from_name(hot['keydown']),
+            0,
+            True)
 
-        '''
-        accelmap path MusicPager/pager/pagenx
-                                        pagebk
-                                        songnx
-                                        songbk
-                                        keyup
-                                        keydn
+        chrtpb.set_accel_path (
+            "<musicpager>/cht/pagebk",
+            accelgrp
+        )
+        chrtpn.set_accel_path (
+            "<musicpager>/cht/pagenx",
+            accelgrp
+        )
+        chrtsb.set_accel_path (
+            "<musicpager>/cht/songbk",
+            accelgrp
+        )
+        chrtsn.set_accel_path (
+            "<musicpager>/cht/songnx",
+            accelgrp
+        )
+        chrtku.set_accel_path (
+            "<musicpager>/cht/keyup",
+            accelgrp
+        )
+        chrtkd.set_accel_path (
+            "<musicpager>/cht/keydn",
+            accelgrp
+        )
+        Gtk.AccelMap.foreach(None, UserConfig.forEach)
 
-        chrtPNxtBut #it doesn't seem I need to connect to a button
-        # just to the window
-        hotdb['pagenext']
-        chrtPBckBut
-        hotdb['pageback']
-        chrtSNxtBut
-        hotdb['songnext']
-        chrtSBckBut
-        hotdb['songback']
-        chrtKUpBut
-        hotdb['keyup']
-        chrtKDnBut
-        hotdb['keydown']
-
-        '''
-        #TODO change glade file so accellerators are not set from
-        # that file. Do this set up first ;)
 
 class FileChooserWindow(Gtk.Window):
 
@@ -1451,7 +1486,7 @@ class Handler:
         #print("now refresh chart")
         self.refreshChart()
 
-    def hKeychange(self, wiget):
+    def hKeychange(self, widget):
         global config
         if not widget.get_sensitive():
             return
@@ -1509,7 +1544,8 @@ setlistlabel = builder.get_object("mainSetList")
 mainkeysign = builder.get_object("mainkeysign")
 mainsongsign = builder.get_object("MainSongSign")
 maininfo = builder.get_object("MainInfo")
-accel = Gtk.AccelGroup()
+# TODO accel group
+accelgrp = Gtk.AccelGroup()
 window.set_default_icon_name('musicpager')
 window.set_title('Music Pager')
 
@@ -1525,6 +1561,12 @@ webbigBox = builder.get_object("bigBox")
 # box (window?) to attach accelorators to
 pagebox = builder.get_object("pagebox")
 #control buttons... not sure I need this for
+chrtpb = builder.get_object("chrtPBckBut")
+chrtsb = builder.get_object("chrtSBckBut")
+chrtku = builder.get_object("chrtKUpBut")
+chrtkd = builder.get_object("chrtKDnBut")
+chrtsn = builder.get_object("chrtSNxtBut")
+chrtpn = builder.get_object("chrtPNxtBut")
 # accellerators will try pagebox first
 
 #setlist
