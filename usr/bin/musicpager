@@ -814,7 +814,6 @@ class UserConfig():
         global config
         #return
         hot = config['hotkeys']
-        # TODO Set accelerator
         window.add_accel_group(accelgrp)
         Gtk.AccelMap.change_entry(
             "<musicpager>/cht/pagebk",
@@ -841,8 +840,8 @@ class UserConfig():
             Gdk.keyval_from_name(hot['keyup']),
             0,
             True)
-        print(f"songback: {hot['songback']}")
-        print(f"keycode: {str(Gdk.keyval_from_name(hot['songback']))}")
+        #print(f"songback: {hot['songback']}")
+        #print(f"keycode: {str(Gdk.keyval_from_name(hot['songback']))}")
         Gtk.AccelMap.change_entry(
             "<musicpager>/cht/keydn",
             Gdk.keyval_from_name(hot['keydown']),
@@ -873,7 +872,7 @@ class UserConfig():
             "<musicpager>/cht/keydn",
             accelgrp
         )
-        Gtk.AccelMap.foreach(None, UserConfig.forEach)
+        # for testing Gtk.AccelMap.foreach(None, UserConfig.forEach)
 
 
 class FileChooserWindow(Gtk.Window):
@@ -1498,6 +1497,7 @@ class Handler:
         hotdb['songback'] = accSbck.get_text()
         hotdb['keydown'] = accKup.get_text()
         hotdb['keyup'] = accKdn.get_text()
+        UserConfig.Save(self)
         UserConfig.sethotkeys(self)
 
 
