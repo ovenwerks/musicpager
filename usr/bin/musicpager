@@ -418,6 +418,27 @@ class notSavedDialog(Gtk.Dialog):
         box.add(label)
         self.show_all()
 
+class GetKeyDialog(Gtk.Dialog):
+
+    def __init__(self, parent):
+        super().__init__(title="Key Detect", parent=window)
+        self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.set_default_size(150, 100)
+        self.ourkey = 0
+        label = Gtk.Label(label="Waiting for Key Press")
+        box = self.get_content_area()
+        box.add(label)
+        self.connect("key-press-event", self.submit)
+        self.show_all()
+
+    def submit(self, widget, event):
+        # get event
+        keyname = Gdk.keyval_name(event.keyval)
+        self.ourkey = event.keyval
+        self.response(Gtk.ResponseType.OK)
+        return True
+
+
 class UserConfig():
 
     def __init__(self):
@@ -507,7 +528,7 @@ class UserConfig():
             hotdb['songnext'] = "b"
         if not 'songback' in hotdb:
             # , looks like <
-            hotdb['songback'] = ","
+            hotdb['songback'] = "comma"
         #print("init has config, will push to widgets")
         stylezoom.set_sensitive(False)
         styletitlesz.set_sensitive(False)
@@ -548,24 +569,14 @@ class UserConfig():
         folderdepth.set_sensitive(False)
         folderdepth.set_value(int(config['general']['folderdepth']))
         folderdepth.set_sensitive(True)
-        accPfwd.set_sensitive(False)
-        accPbck.set_sensitive(False)
-        accSnxt.set_sensitive(False)
-        accSbck.set_sensitive(False)
-        accKup.set_sensitive(False)
-        accKdn.set_sensitive(False)
-        accPfwd.set_text(config['hotkeys']['pagenext'])
-        accPbck.set_text(config['hotkeys']['pageback'])
-        accSnxt.set_text(config['hotkeys']['songnext'])
-        accSbck.set_text(config['hotkeys']['songback'])
-        accKup.set_text(config['hotkeys']['keyup'])
-        accKdn.set_text(config['hotkeys']['keydown'])
-        accPfwd.set_sensitive(True)
-        accPbck.set_sensitive(True)
-        accSnxt.set_sensitive(True)
-        accSbck.set_sensitive(True)
-        accKup.set_sensitive(True)
-        accKdn.set_sensitive(True)
+        #accPfwd.set_text(config['hotkeys']['pagenext'])
+        getpn.set_label(config['hotkeys']['pagenext'])
+        #accPbck.set_text(config['hotkeys']['pageback'])
+        getpb.set_label(config['hotkeys']['pageback'])
+        getsn.set_label(config['hotkeys']['songnext'])
+        getsb.set_label(config['hotkeys']['songback'])
+        getku.set_label(config['hotkeys']['keyup'])
+        getkd.set_label(config['hotkeys']['keydown'])
         #print(f"INIT. GUI set, Dirty: {str(state_db['dirty'])}")
 
         # load setlist
@@ -812,9 +823,7 @@ class UserConfig():
 
     def sethotkeys(self):
         global config
-        #return
         hot = config['hotkeys']
-        window.add_accel_group(accelgrp)
         Gtk.AccelMap.change_entry(
             "<musicpager>/cht/pagebk",
             Gdk.keyval_from_name(hot['pageback']),
@@ -840,8 +849,6 @@ class UserConfig():
             Gdk.keyval_from_name(hot['keyup']),
             0,
             True)
-        #print(f"songback: {hot['songback']}")
-        #print(f"keycode: {str(Gdk.keyval_from_name(hot['songback']))}")
         Gtk.AccelMap.change_entry(
             "<musicpager>/cht/keydn",
             Gdk.keyval_from_name(hot['keydown']),
@@ -872,7 +879,7 @@ class UserConfig():
             "<musicpager>/cht/keydn",
             accelgrp
         )
-        # for testing Gtk.AccelMap.foreach(None, UserConfig.forEach)
+        # Gtk.AccelMap.foreach(None, UserConfig.forEach) # for testing
 
 
 class FileChooserWindow(Gtk.Window):
@@ -1485,21 +1492,60 @@ class Handler:
         #print("now refresh chart")
         self.refreshChart()
 
-    def hKeychange(self, widget):
+    def getpnPress(self, widget):
         global config
-        if not widget.get_sensitive():
+        newlb = Handler.hotkeyset(self, 'pagenext')
+        widget.set_label(newlb)
+        return
+
+    def getpbPress(self, widget):
+        global config
+        newlb = Handler.hotkeyset(self, 'pageback')
+        getpb.set_label(newlb)
+        return
+
+    def getsnPress(self, widget):
+        global config
+        newlb = Handler.hotkeyset(self, 'songnext')
+        getsn.set_label(newlb)
+        return
+
+    def getsbPress(self, widget):
+        global config
+        newlb = Handler.hotkeyset(self, 'songback')
+        getsb.set_label(newlb)
+        return
+
+    def getkuPress(self, widget):
+        global config
+        newlb = Handler.hotkeyset(self, 'keyup')
+        getku.set_label(newlb)
+        return
+
+    def getkdPress(self, widget):
+        global config
+        newlb = Handler.hotkeyset(self, 'keydown')
+        getkd.set_label(newlb)
+        return
+
+    def hotkeyset(self, kind):
+        global config
+        hot = config['hotkeys']
+        dialog = GetKeyDialog(self)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            #print(f"dialcaller key: {str(dialog.ourkey)}")
+            key = Gdk.keyval_name(dialog.ourkey)
+        elif response == Gtk.ResponseType.CANCEL:
+            UserConfig.showStatus(self, "Set hotkey Cancelled")
+            dialog.destroy()
             return
-        print("hot key change")
-        hotdb = config['hotkeys']
-        hotdb['pagenext'] = accPfwd.get_text()
-        hotdb['pageback'] = accPbck.get_text()
-        hotdb['songnext'] = accSnxt.get_text()
-        hotdb['songback'] = accSbck.get_text()
-        hotdb['keydown'] = accKup.get_text()
-        hotdb['keyup'] = accKdn.get_text()
+        # print(f"keyname: {key}")
+        hot[kind] = key
+        dialog.destroy()
         UserConfig.Save(self)
         UserConfig.sethotkeys(self)
-
+        return key
 
     def baseFolder(self, widget):
         global config
@@ -1544,10 +1590,10 @@ setlistlabel = builder.get_object("mainSetList")
 mainkeysign = builder.get_object("mainkeysign")
 mainsongsign = builder.get_object("MainSongSign")
 maininfo = builder.get_object("MainInfo")
-# TODO accel group
 accelgrp = Gtk.AccelGroup()
 window.set_default_icon_name('musicpager')
 window.set_title('Music Pager')
+window.add_accel_group(accelgrp)
 
 #editor
 edit_text = builder.get_object("editor_buffer")
@@ -1560,14 +1606,13 @@ webkitbox = builder.get_object("WebKitholder")
 webbigBox = builder.get_object("bigBox")
 # box (window?) to attach accelorators to
 pagebox = builder.get_object("pagebox")
-#control buttons... not sure I need this for
+#control buttons...
 chrtpb = builder.get_object("chrtPBckBut")
 chrtsb = builder.get_object("chrtSBckBut")
 chrtku = builder.get_object("chrtKUpBut")
 chrtkd = builder.get_object("chrtKDnBut")
 chrtsn = builder.get_object("chrtSNxtBut")
 chrtpn = builder.get_object("chrtPNxtBut")
-# accellerators will try pagebox first
 
 #setlist
 songlist = builder.get_object("songlist")
@@ -1589,13 +1634,13 @@ stylecommentclr = builder.get_object("stylecommentclr")
 ChartStyle = builder.get_object("ChartStyle")
 folderEntry = builder.get_object("setbasefolder")
 folderdepth = builder.get_object("FolderDepth")
-accPfwd = builder.get_object("accPfwd")
-accPbck = builder.get_object("accPbck")
-accSnxt = builder.get_object("accSnxt")
-accSbck = builder.get_object("accSbck")
-accKup = builder.get_object("accKup")
-accKdn = builder.get_object("accKdn")
-
+# accel settings
+getpn = builder.get_object("GetPN")
+getpb = builder.get_object("GetPB")
+getsn = builder.get_object("GetSN")
+getsb = builder.get_object("GetSB")
+getku = builder.get_object("GetKU")
+getkd = builder.get_object("GetKD")
 
 cnfctl = UserConfig()
 def gtk_style():

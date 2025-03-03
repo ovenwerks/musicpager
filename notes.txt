@@ -55,9 +55,9 @@ We need line spacing for:
 
 -----------------------------8<----------------------------
 Depends:
+gir1.2-webkit2-4.1
 python3-dbus
-python3-webkit2
-python3-gtk3 or 4
+python3-gtk3
 json
 
 Raw:

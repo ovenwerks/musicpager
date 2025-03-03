@@ -1177,6 +1177,7 @@ Application Settings
                       <object class="GtkGrid" id="sethotkeys">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
+                        <property name="column-homogeneous">True</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
@@ -1256,69 +1257,80 @@ Application Settings
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="accPfwd">
-                            <property name="name">pagefent</property>
+                          <object class="GtkButton" id="GetPN">
+                            <property name="label" translatable="yes">#</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
-                            <signal name="activate" handler="hKeychange" swapped="no"/>
+                            <property name="receives-default">True</property>
+                            <signal name="clicked" handler="getpnPress" swapped="no"/>
                           </object>
                           <packing>
-                            <property name="left-attach">1</property>
+                            <property name="left-attach">2</property>
                             <property name="top-attach">1</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="accPbck">
+                          <object class="GtkButton" id="GetPB">
+                            <property name="label" translatable="yes">#</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
-                            <signal name="activate" handler="hKeychange" swapped="no"/>
+                            <property name="receives-default">True</property>
+                            <signal name="clicked" handler="getpbPress" swapped="no"/>
                           </object>
                           <packing>
-                            <property name="left-attach">1</property>
+                            <property name="left-attach">2</property>
                             <property name="top-attach">2</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="accSnxt">
+                          <object class="GtkButton" id="GetSN">
+                            <property name="label" translatable="yes">#</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
-                            <signal name="activate" handler="hKeychange" swapped="no"/>
+                            <property name="receives-default">True</property>
+                            <signal name="clicked" handler="getsnPress" swapped="no"/>
                           </object>
                           <packing>
-                            <property name="left-attach">1</property>
+                            <property name="left-attach">2</property>
                             <property name="top-attach">3</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="accSbck">
+                          <object class="GtkButton" id="GetSB">
+                            <property name="label" translatable="yes">#</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
-                            <signal name="activate" handler="hKeychange" swapped="no"/>
+                            <property name="receives-default">True</property>
+                            <signal name="clicked" handler="getsbPress" swapped="no"/>
                           </object>
                           <packing>
-                            <property name="left-attach">1</property>
+                            <property name="left-attach">2</property>
                             <property name="top-attach">4</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="accKup">
+                          <object class="GtkButton" id="GetKU">
+                            <property name="label" translatable="yes">#</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
-                            <signal name="activate" handler="hKeychange" swapped="no"/>
+                            <property name="receives-default">True</property>
+                            <signal name="clicked" handler="getkuPress" swapped="no"/>
                           </object>
                           <packing>
-                            <property name="left-attach">1</property>
+                            <property name="left-attach">2</property>
                             <property name="top-attach">5</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="accKdn">
+                          <object class="GtkButton" id="GetKD">
+                            <property name="label" translatable="yes">#</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
-                            <signal name="activate" handler="hKeychange" swapped="no"/>
+                            <property name="receives-default">True</property>
+                            <signal name="clicked" handler="getkdPress" swapped="no"/>
                           </object>
                           <packing>
-                            <property name="left-attach">1</property>
+                            <property name="left-attach">2</property>
                             <property name="top-attach">6</property>
                           </packing>
                         </child>
