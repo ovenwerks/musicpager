@@ -145,11 +145,11 @@ class ChordPro():
             return gap * z * 2
         l = float(ourdb[R_type]['size'])/100
         h = z * l * (std + gap)
-        if R_type == '.chords':
-            extra = float(ourdb['.lyrics']['size'])/100
+        if R_type == 'chords':
+            extra = float(ourdb['lyrics']['size'])/100
             ch = z * extra * (std + (gap * 2))
             h = h + ch
-        if R_type == '.lyrics':
+        if R_type == 'lyrics':
             h = h + (gap * 1.5)
         return h
 
@@ -269,7 +269,7 @@ class ChordPro():
         titl = True
         buf = io.StringIO(strng)
         for line in buf:
-            if height > (winht - ChordPro.rowheight(self, R_db, '.chords')):
+            if height > (winht - ChordPro.rowheight(self, R_db, 'chords')):
                 # page full
                 hfile = f'{hfile}\n</td>'
                 pagetop = False
@@ -285,14 +285,14 @@ class ChordPro():
                 end = line.find("}")
                 titl = False
                 txt = line[st:end].strip()
-                ht = ChordPro.rowheight(self, R_db, '.title')
+                ht = ChordPro.rowheight(self, R_db, 'title')
                 hfile = f'{hfile}\n<div class="title">{txt}</div>'
                 # print(f"Title line text: {txt}")
             elif '{st' in line or '{sub' in line:
                 st = line.find(":") + 1
                 end = line.find("}")
                 txt = line[st:end].strip()
-                ht = ChordPro.rowheight(self, R_db, '.subtitle')
+                ht = ChordPro.rowheight(self, R_db, 'subtitle')
                 if len(txt) > 75:
                     splt = txt.find(' ', 60)
                     txt1 = txt[0:splt]
@@ -305,14 +305,14 @@ class ChordPro():
                 st = line.find(":") + 1
                 end = line.find("}")
                 txt = line[st:end].strip()
-                ht = ChordPro.rowheight(self, R_db, '.subtitle')
+                ht = ChordPro.rowheight(self, R_db, 'subtitle')
                 hfile = f'{hfile}\n<div class="subtitle">{txt}</div>'
                 # print(f"author or artist line text: {txt}")
             elif '{c:' in line or 'comment' in line:
                 st = line.find(":") + 1
                 end = line.find("}")
                 txt = line[st:end].strip()
-                ht = ChordPro.rowheight(self, R_db, '.comment')
+                ht = ChordPro.rowheight(self, R_db, 'comment')
                 hfile = f'{hfile}\n<div class="comment">{txt}</div>'
                 # print(f"comment line text: {txt}")
             elif line == "\n":
@@ -331,13 +331,13 @@ class ChordPro():
                 # throw these lines away too
                 continue
             else:
-                ht = ChordPro.rowheight(self, R_db, '.chords')
+                ht = ChordPro.rowheight(self, R_db, 'chords')
                 hfile = f'{hfile}\n<table class="songline">'
                 cline = '\n<tr class="chords">'
                 lline = '\n<tr class="lyrics">'
                 ourline = line.strip()
                 if ourline.find("[") == -1:
-                    ht = ChordPro.rowheight(self, R_db, '.lyrics')
+                    ht = ChordPro.rowheight(self, R_db, 'lyrics')
                 for sub in ourline.split('['):
                     # each sub has either one ] or none
                     if sub == "":
@@ -491,16 +491,16 @@ class UserConfig():
         if not 'webkit' in config:
             config['webkit'] = {'zoom': "200"}
         webdb = config['webkit']
-        if not '.title' in webdb:
-            webdb['.title'] = {'size': "100", 'color': "black"}
-        if not '.subtitle' in webdb:
-            webdb['.subtitle'] = {'size': "75", 'color': "black"}
-        if not '.comment' in webdb:
-            webdb['.comment'] = {'size': "90", 'color': "black"}
-        if not '.chords' in webdb:
-            webdb['.chords'] = {'size': "88", 'color': "red"}
-        if not '.lyrics' in webdb:
-            webdb['.lyrics'] = {'size': "80", 'color': "black"}
+        if not 'title' in webdb:
+            webdb['title'] = {'size': "100", 'color': "black"}
+        if not 'subtitle' in webdb:
+            webdb['subtitle'] = {'size': "75", 'color': "black"}
+        if not 'comment' in webdb:
+            webdb['comment'] = {'size': "90", 'color': "black"}
+        if not 'chords' in webdb:
+            webdb['chords'] = {'size': "88", 'color': "red"}
+        if not 'lyrics' in webdb:
+            webdb['lyrics'] = {'size': "80", 'color': "black"}
         if not 'general' in config:
             config['general'] = {'edzoom': "200"}
         gendb = config['general']
@@ -542,16 +542,16 @@ class UserConfig():
         stylelyricclr.set_sensitive(False)
         stylecommentclr.set_sensitive(False)
         stylezoom.set_value(int(webdb['zoom']))
-        styletitlesz.set_value(int(webdb['.title']['size']))
-        stylesubtsz.set_value(int(webdb['.subtitle']['size']))
-        stylechordsz.set_value(int(webdb['.chords']['size']))
-        stylelyricsz.set_value(int(webdb['.lyrics']['size']))
-        stylecommentsz.set_value(int(webdb['.comment']['size']))
-        styletitleclr.set_active_id(webdb['.title']['color'])
-        stylesubtclr.set_active_id(webdb['.subtitle']['color'])
-        stylechordclr.set_active_id(webdb['.chords']['color'])
-        stylelyricclr.set_active_id(webdb['.lyrics']['color'])
-        stylecommentclr.set_active_id(webdb['.comment']['color'])
+        styletitlesz.set_value(int(webdb['title']['size']))
+        stylesubtsz.set_value(int(webdb['subtitle']['size']))
+        stylechordsz.set_value(int(webdb['chords']['size']))
+        stylelyricsz.set_value(int(webdb['lyrics']['size']))
+        stylecommentsz.set_value(int(webdb['comment']['size']))
+        styletitleclr.set_active_id(webdb['title']['color'])
+        stylesubtclr.set_active_id(webdb['subtitle']['color'])
+        stylechordclr.set_active_id(webdb['chords']['color'])
+        stylelyricclr.set_active_id(webdb['lyrics']['color'])
+        stylecommentclr.set_active_id(webdb['comment']['color'])
         stylezoom.set_sensitive(True)
         styletitlesz.set_sensitive(True)
         stylesubtsz.set_sensitive(True)
@@ -800,7 +800,6 @@ class UserConfig():
         # FIXME set hard line heights so tohtml can use them
         # margins are what we need to set both table, tr and td
         # maybe use max-height calculated against font size or zoom
-        # FIXME change these param names to no dot. Add dot here.
         css_str = "\n.doc {\n\ttable-layout: fixed;\n\talign-content: flex-start;\n\t}"
         css_str = f"\n.pages{sl}{el}" # space holder for future use
         css_str = f"{css_str}\n.page{sl}\n\tvertical-align: top;"
@@ -809,7 +808,7 @@ class UserConfig():
         for x in config['webkit']:
             if not x == 'zoom':
                 fts = str(int(config['webkit'][x]['size'])/100 * fnt)
-                line = f"\n{x}{ft}{fts}{cl}{config['webkit'][x]['color']};{el}"
+                line = f"\n.{x}{ft}{fts}{cl}{config['webkit'][x]['color']};{el}"
                 css_str = f"{css_str}{line}"
         css_str = f"{css_str}\n\n"
         with open(css_file, 'w', encoding="utf-8") as f:
@@ -1473,16 +1472,16 @@ class Handler:
         webdb = config['webkit']
         webdb['zoom'] = str(stylezoom.get_value_as_int())
         # print(f"zoom: {str(stylezoom.get_value_as_int())}")
-        webdb['.title']['size'] = str(styletitlesz.get_value_as_int())
-        webdb['.subtitle']['size'] = str(stylesubtsz.get_value_as_int())
-        webdb['.chords']['size'] = str(stylechordsz.get_value_as_int())
-        webdb['.lyrics']['size'] = str(stylelyricsz.get_value_as_int())
-        webdb['.comment']['size'] = str(stylecommentsz.get_value_as_int())
-        webdb['.title']['color'] = styletitleclr.get_active_id()
-        webdb['.subtitle']['color'] = stylesubtclr.get_active_id()
-        webdb['.chords']['color'] = stylechordclr.get_active_id()
-        webdb['.lyrics']['color'] = stylelyricclr.get_active_id()
-        webdb['.comment']['color'] = stylecommentclr.get_active_id()
+        webdb['title']['size'] = str(styletitlesz.get_value_as_int())
+        webdb['subtitle']['size'] = str(stylesubtsz.get_value_as_int())
+        webdb['chords']['size'] = str(stylechordsz.get_value_as_int())
+        webdb['lyrics']['size'] = str(stylelyricsz.get_value_as_int())
+        webdb['comment']['size'] = str(stylecommentsz.get_value_as_int())
+        webdb['title']['color'] = styletitleclr.get_active_id()
+        webdb['subtitle']['color'] = stylesubtclr.get_active_id()
+        webdb['chords']['color'] = stylechordclr.get_active_id()
+        webdb['lyrics']['color'] = stylelyricclr.get_active_id()
+        webdb['comment']['color'] = stylecommentclr.get_active_id()
         config['general']['pagesize'] = str(int(450 * int(webdb['zoom']) / 100))
         #print(webdb)
         #print("about to save config")
