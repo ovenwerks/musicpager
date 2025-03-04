@@ -487,6 +487,7 @@ class UserConfig():
             state_db['main_y'] = "1000" # main window height
         if not 'boxheight' in state_db:
             state_db['boxheight'] = '850'
+
         # stuff to do with webkit chart.
         if not 'webkit' in config:
             config['webkit'] = {'zoom': "200"}
@@ -501,6 +502,7 @@ class UserConfig():
             webdb['chords'] = {'size': "88", 'color': "red"}
         if not 'lyrics' in webdb:
             webdb['lyrics'] = {'size': "80", 'color': "black"}
+
         if not 'general' in config:
             config['general'] = {'edzoom': "200"}
         gendb = config['general']
@@ -514,6 +516,9 @@ class UserConfig():
             gendb['folderdepth'] = "1"
         if not 'pagesize' in gendb:
             gendb['pagesize'] = "900" #width px
+        if not 'autosong' in gendb:
+            gendb['autosong'] = 'False'
+
         if not 'hotkeys' in config:
             # 6 is used but ^ is thought
             config['hotkeys'] = {'keyup': "6"}
@@ -569,6 +574,10 @@ class UserConfig():
         folderdepth.set_sensitive(False)
         folderdepth.set_value(int(config['general']['folderdepth']))
         folderdepth.set_sensitive(True)
+        autosong.set_sensitive(False)
+        if 'True' in config['general']['autosong']:
+            autosong.set_active(True)
+        autosong.set_sensitive(True)
         #accPfwd.set_text(config['hotkeys']['pagenext'])
         getpn.set_label(config['hotkeys']['pagenext'])
         #accPbck.set_text(config['hotkeys']['pageback'])
@@ -593,11 +602,7 @@ class UserConfig():
         self.setselectfix()
         self.save_webcss()
         self.sethotkeys()
-        #print("webcss saved")
         self.Save()
-        #print("config saved")
-        #print(f"INIT end, Dirty: {str(state_db['dirty'])}")
-
 
     def setselectfix(self):
         global config
@@ -800,6 +805,8 @@ class UserConfig():
         # FIXME set hard line heights so tohtml can use them
         # margins are what we need to set both table, tr and td
         # maybe use max-height calculated against font size or zoom
+
+        # missing songline
         css_str = "\n.doc {\n\ttable-layout: fixed;\n\talign-content: flex-start;\n\t}"
         css_str = f"\n.pages{sl}{el}" # space holder for future use
         css_str = f"{css_str}\n.page{sl}\n\tvertical-align: top;"
@@ -1025,13 +1032,15 @@ class Handler:
         if pg > 1:
             pg = pg - 1
         else:
-            pg = 1
+            if autosong.get_active():
+                Handler.PrevSongPressed(self, button)
+                return
+            else:
+                pg = 1
         sz = int(config['general']['pagesize'])
         newpos = float((pg - 1) * sz)
         state['page'] = str(pg)
         adj = webkitbox.get_hadjustment()
-        #newpos = adj.get_value() - adj.get_page_increment()
-        #print(f"Back pressed new pos: {str(newpos)}")
         adj.set_value(newpos)
 
     def ForwardPressed(self, button):
@@ -1042,14 +1051,15 @@ class Handler:
         if pg < num:
             pg = pg + 1
         else:
-            pg = num
+            if autosong.get_active():
+                Handler.NextSongPressed(self, button)
+                return
+            else:
+                pg = num
         sz = int(config['general']['pagesize'])
-        #print(f"pages: {str(num)} page: {str(pg)}")
         state['page'] = str(pg)
         newpos = float((pg - 1) * sz)
         adj = webkitbox.get_hadjustment()
-        #newpos = adj.get_value() - adj.get_page_increment()
-        #print(f"Forward pressed new pos: {str(newpos)}")
         adj.set_value(newpos)
 
     def keyup(self, button):
@@ -1546,6 +1556,15 @@ class Handler:
         UserConfig.sethotkeys(self)
         return key
 
+    def autosongchange(self, widget):
+        global config
+        if not widget.get_sensitive():
+            # print(f"Auto song change not allowed")
+            return
+        config['general']['autosong'] = str(widget.get_active())
+        UserConfig.Save(self)
+
+
     def baseFolder(self, widget):
         global config
         new_fldr = getfilename.on_folder_clicked(widget)
@@ -1633,6 +1652,7 @@ stylecommentclr = builder.get_object("stylecommentclr")
 ChartStyle = builder.get_object("ChartStyle")
 folderEntry = builder.get_object("setbasefolder")
 folderdepth = builder.get_object("FolderDepth")
+autosong = builder.get_object("autoSong")
 # accel settings
 getpn = builder.get_object("GetPN")
 getpb = builder.get_object("GetPB")
