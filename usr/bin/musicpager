@@ -425,7 +425,7 @@ class GetKeyDialog(Gtk.Dialog):
         self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
         self.set_default_size(150, 100)
         self.ourkey = 0
-        label = Gtk.Label(label="Waiting for Key Press")
+        label = Gtk.Label(label="Waiting for Key or Pedal Press")
         box = self.get_content_area()
         box.add(label)
         self.connect("key-press-event", self.submit)
@@ -598,7 +598,6 @@ class UserConfig():
             print("no set list file, make blank db.")
             lists_db = {}
         state_db['list'] = "0"
-        setlistlabel.set_text("Current Set List: None")
         self.setselectfix()
         self.save_webcss()
         self.sethotkeys()
@@ -795,12 +794,13 @@ class UserConfig():
         global config
         state = config['state']
         gen = config['general']
+        web = config['webkit']
         css_file = f"{state['config_path']}/chordpro.css"
         sl = " {"
         ft = " {\n\tfont-size: "
         cl = "px;\n\tcolor: "
         el = "\n\t}"
-        zm = float(config['webkit']['zoom'])/100
+        zm = float(web['zoom'])/100
         fnt = 16 * zm
         # FIXME set hard line heights so tohtml can use them
         # margins are what we need to set both table, tr and td
@@ -810,12 +810,16 @@ class UserConfig():
         css_str = "\n.doc {\n\ttable-layout: fixed;\n\talign-content: flex-start;\n\t}"
         css_str = f"\n.pages{sl}{el}" # space holder for future use
         css_str = f"{css_str}\n.page{sl}\n\tvertical-align: top;"
-        pgsz = config['general']['pagesize']
+        pgsz = gen['pagesize']
         css_str = f"{css_str}\n\tmin-width: {pgsz}px;{el}"
-        for x in config['webkit']:
+        css_str = f"{css_str}\n.songline{sl}\n\theight: "
+        slhi1 = float(web['lyrics']['size']) + float(web['chords']['size'])
+        slhi2 = str(int((slhi1/100 * fnt) + (zm * 2)))
+        css_str = f"{css_str}{slhi2}px;{el}"
+        for x in web:
             if not x == 'zoom':
-                fts = str(int(config['webkit'][x]['size'])/100 * fnt)
-                line = f"\n.{x}{ft}{fts}{cl}{config['webkit'][x]['color']};{el}"
+                fts = str(int(web[x]['size'])/100 * fnt)
+                line = f"\n.{x}{ft}{fts}{cl}{web[x]['color']};{el}"
                 css_str = f"{css_str}{line}"
         css_str = f"{css_str}\n\n"
         with open(css_file, 'w', encoding="utf-8") as f:
@@ -1174,15 +1178,43 @@ class Handler:
         # Load HTML and CSS
         wview.load_html(newhtml, f"file://{state['config_path']}/")
 
+    def SetSelected(self, widget):
+        global config
+        global lists_db
+        if not widget.get_sensitive():
+            # print(f"Widget sensitivity: {str(widget.get_sensitive())}")
+            return
+        state = config['state']
+        # Selected a set list
+        state['list'] = widget.get_active_id()
+        state['song'] = '1'
+        newname = widget.get_active_text()
+        #print(f"setselected:{state['list']}: {newname}")
+        UserConfig.fillsonglist(self)
+        if state['list'] == '0' or not "1" in lists_db[state['list']]['songs']:
+            UserConfig.showStatus(self, "Empty Set List")
+            print("in list = 0 or empty list")
+            state['song'] = '0'
+            state['file'] = "none"
+        else:
+            our_db = lists_db[state['list']]['songs']
+            #print(f"setselected:{state['list']}: {newname}")
+            state['file'] = our_db[state['song']]['file']
+        UserConfig.loadsong(self)
 
     def LdSongPressed(self, button):
         global config
-        if config['state']['dirty']:
+        state = config['state']
+        if state['dirty']:
             self.askToSave()
-        config['state']['file'] = getfilename.on_file_clicked(button)
-        if config['state']['file'] == "none":
+        state['file'] = getfilename.on_file_clicked(button)
+        if state['file'] == "none":
             return
+        state['song'] = "0" # song number in list
+        state['list'] = "0" # current list number
+        state['offset'] = "0"
         UserConfig.loadsong(self)
+        UserConfig.setselectfix(self)
 
     # Editor page callbacks
     def editsavepress(self, button):
@@ -1234,7 +1266,7 @@ class Handler:
         newtext = f"{newtext}{newtext2}"
         mainkeysign.set_text(f"Key: {state['key']}/{state['offset']}")
         mainsongsign.set_text(" Song: New Song ")
-        setlistlabel.set_text("Current Set List: None")
+        UserConfig.setselectfix(self)
         edit_text.set_text(newtext)
         adj = webkitbox.get_hadjustment()
         adj.set_value(0.0)
@@ -1270,7 +1302,6 @@ class Handler:
             'listname': dnewname,
             'songs': {}
         }
-        setlistlabel.set_text(f"Current Set List: {dnewname}")
         setselecter.append(str(list_idx), dnewname)
         setselecter.set_active_id(str(list_idx))
         #print(f"new list all set")
@@ -1302,10 +1333,7 @@ class Handler:
             next_db = lists_db[next_list].copy()
             lists_db[str(x)] = next_db
         lists_db.pop(str(no))
-        #print(f"number of lists now: {str(len(lists_db))}")
         state['list'] = "0"
-        setlistlabel.set_text(f"Current Set List: None")
-        setselecter.set_active_id("0")
         UserConfig.fillsonglist(self)
         UserConfig.save_setlist(self)
         UserConfig.setselectfix(self)
@@ -1329,32 +1357,6 @@ class Handler:
         UserConfig.save_setlist(self)
         UserConfig.setselectfix(self)
         UserConfig.showStatus(self, f"Set List Renamed To: {dnewname}")
-
-
-    def SetSelected(self, widget):
-        global config
-        global lists_db
-        if not widget.get_sensitive():
-            # print(f"Widget sensitivity: {str(widget.get_sensitive())}")
-            return
-        state = config['state']
-        # Selected a set list
-        state['list'] = widget.get_active_id()
-        state['song'] = '1'
-        newname = widget.get_active_text()
-        #print(f"setselected:{state['list']}: {newname}")
-        setlistlabel.set_text(f"Current Set List: {newname}")
-        UserConfig.fillsonglist(self)
-        if state['list'] == '0' or not "1" in lists_db[state['list']]['songs']:
-            UserConfig.showStatus(self, "Empty Set List")
-            print("in list = 0 or empty list")
-            state['song'] = '0'
-            state['file'] = "none"
-        else:
-            our_db = lists_db[state['list']]['songs']
-            #print(f"setselected:{state['list']}: {newname}")
-            state['file'] = our_db[state['song']]['file']
-        UserConfig.loadsong(self)
 
 
     def listsongselected(self, widget, row):
@@ -1604,10 +1606,10 @@ builder.connect_signals(Handler())
 #main window
 window = builder.get_object("window_1")
 nbook = builder.get_object("Nbook_id")
-setlistlabel = builder.get_object("mainSetList")
 mainkeysign = builder.get_object("mainkeysign")
 mainsongsign = builder.get_object("MainSongSign")
 maininfo = builder.get_object("MainInfo")
+setselecter = builder.get_object("setSelecter") #set select dropdown
 accelgrp = Gtk.AccelGroup()
 window.set_default_icon_name('musicpager')
 window.set_title('Music Pager')
@@ -1635,7 +1637,6 @@ chrtpn = builder.get_object("chrtPNxtBut")
 #setlist
 songlist = builder.get_object("songlist")
 newsetbuff = builder.get_object("NewSetBuff") # Buffer for dialog
-setselecter = builder.get_object("setSelecter") #set select dropdown
 
 #settings
 stylezoom = builder.get_object("chartzoom")

@@ -94,6 +94,36 @@
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">   Current setlist:</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBoxText" id="setSelecter">
+                <property name="width-request">201</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="active">0</property>
+                <property name="active-id">0</property>
+                <items>
+                  <item id="0" translatable="yes">None</item>
+                </items>
+                <signal name="changed" handler="SetSelected" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkButton">
                 <property name="label" translatable="yes">Load Song</property>
                 <property name="visible">True</property>
@@ -104,7 +134,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">0</property>
+                <property name="position">2</property>
               </packing>
             </child>
             <child>
@@ -116,7 +146,7 @@
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">3</property>
               </packing>
             </child>
             <child>
@@ -128,20 +158,7 @@
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="mainSetList">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="halign">start</property>
-                <property name="label" translatable="yes">   Current setlist: None Loaded</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">3</property>
+                <property name="position">4</property>
               </packing>
             </child>
             <child>
@@ -155,7 +172,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">4</property>
+                <property name="position">5</property>
               </packing>
             </child>
           </object>
@@ -326,7 +343,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Chart Pager</property>
+                <property name="label" translatable="yes">  Chart Pager  </property>
               </object>
               <packing>
                 <property name="tab-fill">False</property>
@@ -420,7 +437,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Editor</property>
+                <property name="label" translatable="yes">  Song Editor  </property>
               </object>
               <packing>
                 <property name="position">1</property>
@@ -509,22 +526,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkComboBoxText" id="setSelecter">
-                            <property name="width-request">201</property>
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="active">0</property>
-                            <property name="active-id">0</property>
-                            <items>
-                              <item id="0" translatable="yes">None</item>
-                            </items>
-                            <signal name="changed" handler="SetSelected" swapped="no"/>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">5</property>
-                          </packing>
+                          <placeholder/>
                         </child>
                         <child>
                           <object class="GtkLabel">
@@ -656,7 +658,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Set List</property>
+                <property name="label" translatable="yes">  Set List Editor  </property>
               </object>
               <packing>
                 <property name="position">2</property>
@@ -1559,7 +1561,7 @@ Auto next song on next page if on last page</property>
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Settings</property>
+                <property name="label" translatable="yes">  Settings  </property>
               </object>
               <packing>
                 <property name="position">3</property>
