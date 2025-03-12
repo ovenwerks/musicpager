@@ -444,7 +444,6 @@ class UserConfig():
     def __init__(self):
         global config
         global lists_db
-
         config_path = os.path.expanduser(f"~/.config/{appname}/")
         # Make sure this directory exists
         if not os.path.isdir(config_path):
@@ -680,6 +679,34 @@ class UserConfig():
             label.show()
             songlist.show_all()
 
+    def fixsonginfo(self):
+        global config
+        state = config['state']
+        edtxst = edit_text.get_start_iter()
+        edtxend = edit_text.get_end_iter()
+        our_text = edit_text.get_text(edtxst, edtxend, False )
+        if our_text.lower().find("{t:") == -1:
+            if our_text.lower().find("{title:") == -1:
+                # no title
+                base = os.path.basename(state['file'])
+                sname = base.split(".")[0]
+            else:
+                sname = our_text[our_text.lower().find("{title:")+7:].split("}",1)[0].strip()
+        else:
+            sname = our_text[our_text.lower().find("{t:")+3:].split("}",1)[0].strip()
+        if our_text.lower().find("{k") == -1:
+            if our_text.lower().find("# key") == -1:
+                state['key'] = "unknown"
+            else:
+                ke1 = our_text[our_text.lower().find("# key = ") + 8:]
+                state['key'] = ke1.split("\n",1)[0].strip()
+        else:
+            key1 = our_text[our_text.lower().find("{k"):]
+            state['key'] = key1.split(": ")[1].split("}",1)[0].strip()
+        mainkeysign.set_text(f"Key: {state['key']}/{state['offset']}")
+        mainsongsel.remove(0)
+        mainsongsel.prepend("name", sname)
+        mainsongsel.set_active_id("name")
 
     def loadsong(self):
         global config
@@ -705,7 +732,6 @@ class UserConfig():
                 os1 = read_data[read_data.lower().find("# transpose = ") + 14:]
                 state['offset'] = os1.split("\n",1)[0].strip()
         #print(f"load song, text read, dirty: {str(state['dirty'])}")
-
         if read_data.lower().find("{t:") == -1:
             if read_data.lower().find("{title:") == -1:
                 # no title
@@ -739,7 +765,9 @@ class UserConfig():
             #state['dirty'] = True
         edit_text.set_text(read_data)
         mainkeysign.set_text(f"Key: {state['key']}/{state['offset']}")
-        mainsongsign.set_text(f" Song: {sname} ")
+        mainsongsel.remove(0)
+        mainsongsel.prepend("name", sname)
+        mainsongsel.set_active_id("name")
         adj = webkitbox.get_hadjustment()
         adj.set_value(0.0)
         #print(f"end of load song, before chart refresh, dirty: {str(state['dirty'])}")
@@ -1134,7 +1162,6 @@ class Handler:
     def askToSave(self):
         global config
         #print(f"Asktosave find dirty is: {str(config['state']['dirty'])}")
-        #return
         state = config['state']
         dialog = notSavedDialog(window)
         response = dialog.run()
@@ -1202,6 +1229,18 @@ class Handler:
             state['file'] = our_db[state['song']]['file']
         UserConfig.loadsong(self)
 
+    def SongChange(self, widget):
+        global config
+        if widget.get_active_id() == "load":
+            Handler.LdSongPressed(self, widget)
+            widget.set_active_id("name")
+        elif widget.get_active_id() == "name":
+            return
+        elif widget.get_active_id() == "search":
+            gen = config['general']
+        else:
+            return
+
     def LdSongPressed(self, button):
         global config
         state = config['state']
@@ -1231,6 +1270,8 @@ class Handler:
         with open(state['file'], 'w', encoding="utf-8") as f:
             f.write(edit_text.get_text(edtxst, edtxend, False ))
         UserConfig.showStatus(self, f"Saved to {state['file']}")
+        UserConfig.fillsonglist(self)
+        UserConfig.fixsonginfo(self)
         state['dirty'] = False
 
 
@@ -1239,6 +1280,7 @@ class Handler:
 
     def songsaveas(self):
         global config
+        global lists_db
         state = config['state']
         state['file'] = getfilename.file_save()
         #print(f"filename to save: {state['file']}")
@@ -1250,8 +1292,12 @@ class Handler:
         with open(state['file'], 'w', encoding="utf-8") as f:
             f.write(edit_text.get_text(edtxst, edtxend, False ))
         UserConfig.showStatus(self, f"Saved To {state['file']}")
+        if state['list'] != '0':
+            lists_db[state['list']]['songs'][state['song']]['file'] = \
+                    state['file']
+            UserConfig.fillsonglist(self)
+        UserConfig.fixsonginfo(self)
         state['dirty'] = False
-
 
     def CreateSong(self, button):
         global config
@@ -1265,7 +1311,9 @@ class Handler:
         newtext2 = "\n{key: unknown}\n\n{c: Verse}\n\n"
         newtext = f"{newtext}{newtext2}"
         mainkeysign.set_text(f"Key: {state['key']}/{state['offset']}")
-        mainsongsign.set_text(" Song: New Song ")
+        mainsongsel.remove(0)
+        mainsongsel.prepend("name", "New Song")
+        mainsongsel.set_active_id("name")
         UserConfig.setselectfix(self)
         edit_text.set_text(newtext)
         adj = webkitbox.get_hadjustment()
@@ -1607,7 +1655,7 @@ builder.connect_signals(Handler())
 window = builder.get_object("window_1")
 nbook = builder.get_object("Nbook_id")
 mainkeysign = builder.get_object("mainkeysign")
-mainsongsign = builder.get_object("MainSongSign")
+mainsongsel = builder.get_object("MainSongSelect")
 maininfo = builder.get_object("MainInfo")
 setselecter = builder.get_object("setSelecter") #set select dropdown
 accelgrp = Gtk.AccelGroup()

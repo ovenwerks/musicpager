@@ -1,6 +1,23 @@
+musicpager version 0.2.1
+
+ [ Len Ovens ]
+- Moved Set selector to main page
+- Change load song button to current song label with dropdown
+- Add song file select to drop down
+
+musicpager version 0.2.0
+
+ [ Len Ovens ]
+- Set out own Accelerators. User settings still need work.
+- User Accelerator settings added save
+- Changed accelerator setting to key press detection
+- Change webkit parameters to remove leading dot
+- Add Exit button, Allow auto next/previous song on page
+- Release as 0.2.0 (needs user comments)
+
 musicpager version 0.1.0
 
  [ Len Ovens ]
 - move from personal software to public release
-        beta 1
+        Alpha 1
 
