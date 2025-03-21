@@ -278,8 +278,8 @@ class ChordPro():
             if not pagetop:
                 hfile = f'{hfile}\n<td class="page">'
                 pagetop = True
-            # TODO separate out lines that  start with "{" so that
-            # dealing with new directives is easier
+            # TODO deal with other directives
+            # separate out lines that  start with "{" so that
             if '{t' in line and titl:
                 st = line.find(":") + 1
                 end = line.find("}")
@@ -389,6 +389,115 @@ class NewSetDialog(Gtk.Dialog):
     def submit(self, entry):
         # Send the OK response to the dialog
         self.response(Gtk.ResponseType.OK)
+
+
+class SearchDialog(Gtk.Dialog):
+
+    def __init__(self, parent):
+        super().__init__(title="Search For A Song", parent=window)
+        #super().__init__(title="Add New Set List", transient_for=parent, flags=0)
+        self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.set_default_size(700, 500)
+        self.filePath = "none"
+        self.found = {}
+
+        # Input section:
+        label = Gtk.Label(label="Search Text:")
+        entry = Gtk.Entry()
+        srchBox = Gtk.Box()
+        srchBox.set_orientation(Gtk.Orientation.HORIZONTAL)
+        srchBox.pack_start(label, expand = False, fill = False, padding = 10)
+        srchBox.pack_start(entry, expand = True, fill = True, padding = 10)
+
+        # List section
+        self.listbx = Gtk.ListBox()
+        vp = Gtk.Viewport()
+        vp.add(self.listbx)
+        Scrlbx = Gtk.ScrolledWindow()
+        Scrlbx.add(vp)
+
+        # box to fit everything in
+        box = self.get_content_area()
+        box.add(srchBox)
+        box.pack_start(Scrlbx, expand = True, fill = True, padding = 0)
+        self.listbx.connect("row-selected", self.submit)
+        entry.connect("changed", self.fillList)
+        self.show_all()
+
+    def fillList(self, widget):
+        global config
+        srchtxt = widget.get_text().lower()
+        if len(srchtxt) < 4:
+            return
+        print(f"search for: {srchtxt}")
+        songfile = f"{config['state']['config_path']}/songs.json"
+        if os.path.isfile(songfile) and os.path.getsize(songfile) > 50:
+            # songfile file exists, read it in
+            with open(songfile) as f:
+                sdb = json.load(f)
+            indx = 0
+            for sfile in sdb:
+                fnd = False
+                linetx = ""
+                # TODO use this approach to remove extra characters
+                # from both search and searched text
+                # s = "Data!@Science#Rocks123"
+                # clean = re.sub(r'[^a-zA-Z0-9]', '', s)
+                if srchtxt in sdb[sfile]['name']:
+                    fnd = True
+                if srchtxt in sdb[sfile]['verse']:
+                    linetx = sdb[sfile]['verse']
+                    fnd = True
+                elif srchtxt in sdb[sfile]['chorus']:
+                    linetx = sdb[sfile]['chorus']
+                    fnd = True
+                if fnd:
+                    self.found[str(indx)] = {
+                            'file': sfile,
+                            'name': sdb[sfile]['name'],
+                            'author': sdb[sfile]['author'],
+                            'line': linetx
+                        }
+                    indx = indx + 1
+        self.dsplylist()
+
+    def dsplylist(self):
+        # this whole thing may be appended onto fillList
+        if self.found != {}:
+            each = None
+            while self.listbx.get_row_at_index(0):
+                each = self.listbx.get_row_at_index(0)
+                each.destroy()
+            for idx in self.found:
+                mysng = self.found[idx]
+                desc = f"{os.path.basename(mysng['file'])}\n"
+                desc = f"{desc}{mysng['name']} - {mysng['author']}\n"
+                desc = f"{desc}{mysng['line']}"
+                label = Gtk.Label.new(desc)
+                label.set_justify(Gtk.Justification.LEFT)
+                row = Gtk.ListBoxRow()
+                hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=50)
+                row.add(hbox)
+                hbox.pack_start(label, False, False, 0)
+                self.listbx.add(row)
+                label.show()
+                self.listbx.show_all()
+
+    def submit(self, widget, row):
+        global config
+        global srchfil
+        srchfil = 'none'
+        state = config['state']
+        # A song was selected from the list
+        if row == None:
+            return
+        # Index starts at 0... this may not matter cause we don't show it anyway
+        idx = str(row.get_index())
+        srchfil = self.found[idx]['file']
+        # Send the OK response to the dialog
+        self.response(Gtk.ResponseType.OK)
+
+
 
 class OKCancelDialog(Gtk.Dialog):
 
@@ -506,9 +615,7 @@ class UserConfig():
             config['general'] = {'edzoom': "200"}
         gendb = config['general']
         if not 'chrtcol' in gendb:
-            gendb['chrtcol'] = "1" # FIXME do we use this?
-            # we should I think. One col would have to scroll vertically
-            # it would also be good for html to pdf
+            gendb['chrtcol'] = "1"
         if not 'folder' in gendb:
             gendb['folder'] = os.path.expanduser(f"~/")
         if not 'folderdepth' in gendb:
@@ -633,42 +740,45 @@ class UserConfig():
             return
         for idx in lists_db[state['list']]['songs']:
             song_db = lists_db[state['list']]['songs'][idx]
-            with open(song_db['file'], encoding="utf-8") as f:
-                read_data = f.read()
-            if read_data.lower().find("{t:") == -1:
-                if read_data.lower().find("{title:") == -1:
-                    # no title
-                    base = os.path.basename(state['file'])
-                    name = base.split(".")[0]
-                else:
-                    name = read_data[read_data.lower().find("{title:")+7:].split("}",1)[0].strip()
-            else:
-                name = read_data[read_data.lower().find("{t:")+3:].split("}",1)[0].strip()
-            if read_data.lower().find("{key:") == -1:
-                if read_data.lower().find("# key") == -1:
-                    # no key
-                    key = placeholder
-                else:
-                    key1 = read_data[read_data.lower().find("# key = ") + 8:]
-                    key = key1.split("\n",1)[0].strip()
-            else:
-                key = read_data[read_data.lower().find("{key:")+5:].split("}",1)[0].strip()
-            if read_data.lower().find("{composer:") == -1:
-                if read_data.lower().find("{artist:") == -1:
-                    if read_data.lower().find("{subtitle:") == -1:
-                        if read_data.lower().find("{st:") == -1:
-                            print(" no author")
-                            author = placeholder
-                        else:
-                            author = read_data[read_data.lower().find("{st:")+4:].split("}",1)[0].strip()
+            if os.path.isfile(song_db['file']):
+                with open(song_db['file'], encoding="utf-8") as f:
+                    read_data = f.read()
+                if read_data.lower().find("{t:") == -1:
+                    if read_data.lower().find("{title:") == -1:
+                        # no title
+                        base = os.path.basename(state['file'])
+                        name = base.split(".")[0]
                     else:
-                        author = read_data[read_data.lower().find("{subtitle:")+10:].split("}",1)[0].strip()
+                        name = read_data[read_data.lower().find("{title:")+7:].split("}",1)[0].strip()
                 else:
-                    author = read_data[read_data.lower().find("{artist:")+8:].split("}",1)[0].strip()
+                    name = read_data[read_data.lower().find("{t:")+3:].split("}",1)[0].strip()
+                if read_data.lower().find("{key:") == -1:
+                    if read_data.lower().find("# key") == -1:
+                        # no key
+                        key = placeholder
+                    else:
+                        key1 = read_data[read_data.lower().find("# key = ") + 8:]
+                        key = key1.split("\n",1)[0].strip()
+                else:
+                    key = read_data[read_data.lower().find("{key:")+5:].split("}",1)[0].strip()
+                if read_data.lower().find("{composer:") == -1:
+                    if read_data.lower().find("{artist:") == -1:
+                        if read_data.lower().find("{subtitle:") == -1:
+                            if read_data.lower().find("{st:") == -1:
+                                print(" no author")
+                                author = placeholder
+                            else:
+                                author = read_data[read_data.lower().find("{st:")+4:].split("}",1)[0].strip()
+                        else:
+                            author = read_data[read_data.lower().find("{subtitle:")+10:].split("}",1)[0].strip()
+                    else:
+                        author = read_data[read_data.lower().find("{artist:")+8:].split("}",1)[0].strip()
+                else:
+                    author = read_data[read_data.lower().find("{composer:")+10:].split("}",1)[0].strip()
+                desc = f"{idx}: {name} - {author} - "
+                desc = f"{desc}Key: {key} - Key offset: {song_db['offset']}"
             else:
-                author = read_data[read_data.lower().find("{composer:")+10:].split("}",1)[0].strip()
-            desc = f"{idx}: {name} - {author} - "
-            desc = f"{desc}Key: {key} - Key offset: {song_db['offset']}"
+                desc = f"{idx}: File Missing: {song_db['file']}"
             label = Gtk.Label.new(desc)
             label.set_justify(Gtk.Justification.LEFT)
             row = Gtk.ListBoxRow()
@@ -715,8 +825,9 @@ class UserConfig():
         state['page'] = 1
         #print(f"File to load {state['file']}")
         #print(f"Top of load song, dirty: {str(state['dirty'])}")
+        if not os.path.isfile(state['file']):
+            read_data = f"File: {state['file']} Is missing!"
         if state['file'] == 'none':
-            state['song'] = '0'
             read_data = ""
         else:
             with open(state['file'], encoding="utf-8") as f:
@@ -853,10 +964,108 @@ class UserConfig():
         with open(css_file, 'w', encoding="utf-8") as f:
             f.write(css_str)
 
+    def saveSongs(self):
+        global config
+        gen = config['general']
+        state = config['state']
+        song_file = f"{state['config_path']}/songs.json"
+        songDir = gen['folder']
+        maxd = int(gen['folderdepth'])
+        filelist = []
+        dirlist = []
+        songdb = {}
+        ok_ext = ['.txt', '.crd', '.cho', '.gcp']
+        depth = 0
+        oldDlist = [songDir]
+        for deep in range(0, maxd + 1):
+            for dr in oldDlist:
+                rawlist = os.listdir(dr)
+                for entry in rawlist:
+                    epath = f"{dr}/{entry}"
+                    if os.path.isfile(epath):
+                        filelist = filelist + [epath]
+                    if os.path.isdir(epath):
+                        dirlist = dirlist + [epath]
+            oldDlist = dirlist
+        for fullx in filelist:
+            xext = "bad"
+            xext = os.path.splitext(fullx)[1]
+            #print(f"file: {fullx} Ext:{xext}")
+            name = 'unknown'
+            author = name
+            vline = name
+            cline = name
+            if xext in ok_ext:
+                #print(f"file: {fullx}")
+                with open(fullx, encoding="utf-8") as f:
+                    read_data = f.read().lower()
+                if read_data.find("{") == -1 and read_data.find("[") == -1:
+                    # not chordpro song
+                    continue
+                if read_data.find("{t:") == -1:
+                    if read_data.find("{title:") == -1:
+                        # no title
+                        base = os.path.basename(state['file'])
+                        name = base.split(".")[0]
+                        name = name.replace('_', ' ')
+                        name = name.replace('-', ' ')
+                    else:
+                        name = read_data[read_data.find("{title:")+7:].split("}",1)[0].strip()
+                else:
+                    name = read_data[read_data.find("{t:")+3:].split("}",1)[0].strip()
+                #print(f"file: {fullx} name: {name}")
+                if read_data.find("{composer:") == -1:
+                    if read_data.find("{artist:") == -1:
+                        if read_data.find("{subtitle:") == -1:
+                            if read_data.find("{st:") == -1:
+                                #print(" no author")
+                                author = 'none'
+                            else:
+                                author = read_data[read_data.find("{st:")+4:].split("}",1)[0].strip()
+                        else:
+                            author = read_data[read_data.find("{subtitle:")+10:].split("}",1)[0].strip()
+                    else:
+                        author = read_data[read_data.find("{artist:")+8:].split("}",1)[0].strip()
+                else:
+                    author = read_data[read_data.find("{composer:")+10:].split("}",1)[0].strip()
+                veridx = read_data.find("verse")
+                choidx = read_data.find("chorus")
+                if veridx != -1:
+                    vline = read_data[veridx:].split("\n", 1)[1].split("\n")[0]
+                    vline = UserConfig.deChordLine(vline)
+                    #print(f"Vline: {vline}")
+                if choidx != -1:
+                    cline = read_data[choidx:].split("\n", 1)[1].split("\n")[0]
+                    cline = UserConfig.deChordLine(cline)
+                    #print(f"Cline: {cline}")
+                songdb[fullx] = {
+                    'name': name,
+                    'author': author,
+                    'verse': vline,
+                    'chorus': cline
+                    }
+        #print(f"songdb: {str(songdb)}")
+        with open(song_file, 'w') as json_file:
+            json.dump(songdb, json_file, indent=4)
+            json_file.write("\n")
+            json_file.flush()
+
+    def deChordLine(line):
+        # take [] contents out of line
+        out = ""
+        for bit in line.split('['):
+            if bit.find("]") != -1:
+                out = f"{out}{bit.split(']', 1)[1]}"
+                #print(f"bit: {bit}")
+            else:
+                out = f"{out}{bit}"
+        return out
+
     def showStatus(self, messg):
         maininfo.set_text(f"{messg}")
 
     def forEach(data1, path, key, mod, chng):
+        # for testing only
         print(f"path: {str(path)} key: {str(key)}")
 
     def sethotkeys(self):
@@ -1231,6 +1440,8 @@ class Handler:
 
     def SongChange(self, widget):
         global config
+        global srchfil
+        state = config['state']
         if widget.get_active_id() == "load":
             Handler.LdSongPressed(self, widget)
             widget.set_active_id("name")
@@ -1238,7 +1449,24 @@ class Handler:
             return
         elif widget.get_active_id() == "search":
             gen = config['general']
+            widget.set_active_id("name")
+            dialog = SearchDialog(window)
+            response = dialog.run()
+            if response == Gtk.ResponseType.CANCEL:
+                UserConfig.showStatus(self, "Song not selected")
+                dialog.destroy()
+                return
+            dialog.destroy()
+            state['file'] = srchfil
+            if state['file'] == "none":
+                return
+            state['song'] = "0" # song number in list
+            state['list'] = "0" # current list number
+            state['offset'] = "0"
+            UserConfig.loadsong(self)
+            UserConfig.setselectfix(self)
         else:
+            widget.set_active_id("name")
             return
 
     def LdSongPressed(self, button):
@@ -1416,10 +1644,8 @@ class Handler:
             return
         idx = row.get_index() + 1
         state['song'] = str(idx)
-        our_db = lists_db[state['list']]['songs'][str(idx)]
-        state['file'] = our_db['file']
+        state['file'] = lists_db[state['list']]['songs'][str(idx)]['file']
         UserConfig.loadsong(self)
-
 
     def ListAdd(self, button):
         global config
@@ -1430,6 +1656,8 @@ class Handler:
         our_db = lists_db[state['list']]['songs']
         this_idx = str(len(our_db) + 1)
         song_file = getfilename.on_file_clicked(button)
+        if song_file == "none":
+            return
         with open(song_file, encoding="utf-8") as f:
             read_data = f.read()
         if read_data.lower().find("# trans") == -1:
@@ -1439,6 +1667,42 @@ class Handler:
             os = os1.split("\n",1)[0].strip()
         our_db[this_idx] = {
             'file': song_file,
+            'offset': os
+        }
+        UserConfig.save_setlist(self)
+        UserConfig.fillsonglist(self)
+
+    def listSearchPress(self, button):
+        global config
+        global lists_db
+        global srchfil
+        state = config['state']
+        # Add a song to the list
+        placeholder = "blank"
+        our_db = lists_db[state['list']]['songs']
+        this_idx = str(len(our_db) + 1)
+        #gen = config['general']
+        dialog = SearchDialog(window)
+        response = dialog.run()
+        if response == Gtk.ResponseType.CANCEL:
+            UserConfig.showStatus(self, "Song not selected")
+            dialog.destroy()
+            return
+        dialog.destroy()
+        #state['file'] = srchfil
+        #if state['file'] == "none":
+        #    return
+        if srchfil == "none":
+            return
+        with open(srchfil, encoding="utf-8") as f:
+            read_data = f.read()
+        if read_data.lower().find("# trans") == -1:
+            os = '0'
+        else:
+            os1 = read_data[read_data.lower().find("# transpose = ") + 14:]
+            os = os1.split("\n",1)[0].strip()
+        our_db[this_idx] = {
+            'file': srchfil,
             'offset': os
         }
         UserConfig.save_setlist(self)
@@ -1627,12 +1891,23 @@ class Handler:
         new_fldr = widget.get_text()
         config['general']['folder'] = new_fldr
         UserConfig.Save(self)
+        UserConfig.saveSongs(self)
 
     def subfolderdepth(self, widget):
         global config
         depth = widget.get_value_as_int()
+        if depth < 0:
+            depth = 0
+            widget.set_value(depth)
+        elif depth > 2:
+            depth = 2
+            widget.set_value(depth)
         config['general']['folderdepth'] = depth
         UserConfig.Save(self)
+        UserConfig.saveSongs(self)
+
+    def refreshSongs(self, widget):
+        UserConfig.saveSongs(self)
 
 
 # this code initializes stuff

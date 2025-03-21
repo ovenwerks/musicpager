@@ -1,9 +1,14 @@
-musicpager version 0.2.1
+musicpager version 0.2.9
 
  [ Len Ovens ]
 - Moved Set selector to main page
 - Change load song button to current song label with dropdown
 - Add song file select to drop down
+- Fix add song fail on cancel
+- Catch file in set list that goes AWOL
+- Also catch bad file name at song load
+- Add song search function to load song
+- Add song search function to list manager
 
 musicpager version 0.2.0
 
