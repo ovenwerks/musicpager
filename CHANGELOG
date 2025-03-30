@@ -1,3 +1,9 @@
+musicpager version 0.2.11
+
+ [ Len Ovens ]
+- Fix search list still showed old results when no search results
+- Adjust search strings so words with dash in mid word are seen
+
 musicpager version 0.2.10
 
  [ Len Ovens ]

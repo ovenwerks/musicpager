@@ -28,6 +28,7 @@ import io
 import subprocess
 import os
 import json
+import re
 import shlex
 import shutil
 import sys
@@ -376,7 +377,6 @@ class SearchDialog(Gtk.Dialog):
         self.set_default_size(700, 500)
         self.filePath = "none"
         self.found = {}
-
         # Input section:
         label = Gtk.Label(label="Search Text:")
         entry = Gtk.Entry()
@@ -384,14 +384,12 @@ class SearchDialog(Gtk.Dialog):
         srchBox.set_orientation(Gtk.Orientation.HORIZONTAL)
         srchBox.pack_start(label, expand = False, fill = False, padding = 10)
         srchBox.pack_start(entry, expand = True, fill = True, padding = 10)
-
         # List section
         self.listbx = Gtk.ListBox()
         vp = Gtk.Viewport()
         vp.add(self.listbx)
         Scrlbx = Gtk.ScrolledWindow()
         Scrlbx.add(vp)
-
         # box to fit everything in
         box = self.get_content_area()
         box.add(srchBox)
@@ -402,9 +400,13 @@ class SearchDialog(Gtk.Dialog):
 
     def fillList(self, widget):
         global config
+        self.found = {}
         srchtxt = widget.get_text().lower()
         if len(srchtxt) < 4:
             return
+        #remove spaces and non-letter chars
+        srch = re.sub(r'[^a-zA-Z0-9]', '', srchtxt)
+        #print(f"squished search string: {srch}")
         songfile = f"{config['state']['config_path']}/songs.json"
         if os.path.isfile(songfile) and os.path.getsize(songfile) > 50:
             # songfile file exists, read it in
@@ -414,17 +416,18 @@ class SearchDialog(Gtk.Dialog):
             for sfile in sdb:
                 fnd = False
                 linetx = ""
-                # TODO use this approach to remove extra characters
-                # from both search and searched text
-                # s = "Data!@Science#Rocks123"
-                # clean = re.sub(r'[^a-zA-Z0-9]', '', s)
-                # will remove spaces - etc.
-                if srchtxt in sdb[sfile]['name']:
+                sn = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['name'])
+                #if srchtxt in sdb[sfile]['name']:
+                if srch in sn:
                     fnd = True
-                if srchtxt in sdb[sfile]['verse']:
+                sv = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['verse'])
+                sc = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['chorus'])
+                #if srchtxt in sdb[sfile]['verse']:
+                if srch in sv:
                     linetx = sdb[sfile]['verse']
                     fnd = True
-                elif srchtxt in sdb[sfile]['chorus']:
+                #elif srchtxt in sdb[sfile]['chorus']:
+                elif srch in sc:
                     linetx = sdb[sfile]['chorus']
                     fnd = True
                 if fnd:
@@ -438,12 +441,11 @@ class SearchDialog(Gtk.Dialog):
         self.dsplylist()
 
     def dsplylist(self):
-        # this whole thing may be appended onto fillList
+        each = None
+        while self.listbx.get_row_at_index(0):
+            each = self.listbx.get_row_at_index(0)
+            each.destroy()
         if self.found != {}:
-            each = None
-            while self.listbx.get_row_at_index(0):
-                each = self.listbx.get_row_at_index(0)
-                each.destroy()
             for idx in self.found:
                 mysng = self.found[idx]
                 desc = f"{os.path.basename(mysng['file'])}\n"
@@ -467,7 +469,6 @@ class SearchDialog(Gtk.Dialog):
         # A song was selected from the list
         if row == None:
             return
-        # Index starts at 0... this may not matter cause we don't show it anyway
         idx = str(row.get_index())
         srchfil = self.found[idx]['file']
         # Send the OK response to the dialog
