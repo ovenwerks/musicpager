@@ -1,3 +1,11 @@
+musicpager version 0.2.10
+
+ [ Len Ovens ]
+- Change key label to show key displayed in chart instead of offset
+- Move all songname and key display to one place
+- Make sure the above works with no song loaded
+- Make sure application loads with clean state
+
 musicpager version 0.2.9
 
  [ Len Ovens ]

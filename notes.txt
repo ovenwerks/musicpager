@@ -13,17 +13,9 @@ Files: (for config)
 Database for songs:
  Search by:
  - title                Actual Title
-    -sortTitle          Title after throw away words like "the"
-    -first line         Some people rremember the first line better
-    -alternate          If the title is "Title(another Title)"
-The idea is to only use the bottom three for listing in searches. Any
-field that is blank or unset is not used, Any field that would be
-the same as a field already filled would not be set. So any song might
-be listed up to 4 times in a search/songlist.
- - Question??? should each version just have it's own entry or one entry
-    with 4 names? The second makes more sense seeing as all entrys are
-    basically links to a file
-file:title:author:firstline:sorttitle:key
+ -first verse line   Some people remember the first line better
+ -first chorus line  another firt line
+file:title:author:verseline:chorusline
 -----------------------------8<------------------------
 Set list db: (all strings)
 - list index    V                                   unique number
@@ -31,11 +23,6 @@ Set list db: (all strings)
                 -songs  V                           song list
                         - index V                   number for order
                                 - file path/name    Where the song is
-                                - name              From {t: name}
-                                - Author            from {st: name}
-                                                    or {composer: *}
-                                                    or {artist: *}
-                                - key               from {key: key}
                                 - key offset        steps compared to key
 
 ------------------------------8<------------------------------
@@ -77,3 +64,4 @@ gi.require_version("Gtk", "3.0")
 gi.require_version('WebKit2', '4.1')
 
 ----------------------------8<-------------------
+

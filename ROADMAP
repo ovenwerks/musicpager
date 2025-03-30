@@ -23,11 +23,6 @@ Features we want:
         place in song before going back. Or both but this may be easier
         to implement first and would sure be nice.
 
- - List songs as either filenames or by title or author or first line
-    for song selection purposes. Would need inteligent saving
-    - title and first line could show together
-    - show in alphabetical order
-
  - print to PDF
     - probably with html to pdf
     - so add many options to html converter:

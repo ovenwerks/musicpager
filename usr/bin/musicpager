@@ -68,7 +68,6 @@ class ChordPro():
         size = 1
         for raw in ourtxt.split('['):
             raw = raw.split(']', 1)[0]
-            # print(f"raw: {raw}")
             if not raw[0] in "ABCDEFG":
                 print(f"{raw} not a chord")
                 continue
@@ -81,10 +80,8 @@ class ChordPro():
                 bas = ChordPro.note2num(self, raw[0:size])
                 if not bas in basscrds:
                     basscrds.append(bas)
-            #print(f"no bass raw: {raw}")
             # remove maj7
             raw = raw.split('ma', 1)[0]
-            #print(f"mag raw: {raw}")
             if 'm' in raw:
                 #minor
                 raw = raw.split('m', 1)[0]
@@ -105,7 +102,6 @@ class ChordPro():
             l1 = ourpool[x:12]
             l2 = ourpool[0:x]
             testl = l1 + l2
-            #print(f"test line: {str(testl)}")
             fnd = 0
             for y in range(0, 12):
                 tst = testl[y]
@@ -116,16 +112,13 @@ class ChordPro():
                     fnd = fnd + 1
                 elif tst == 'M' and std == 'D':
                     fnd = fnd + 1
-                #print(f"test: {tst} standard: {std} fnd: {str(fnd)}")
             found[x] = fnd
-        #print(f"Found values: {str(found)}")
         high = [0, found[0]]
         for z in range(1, 12):
             if found[z] > high[1]:
                 high[0] = z
                 high[1] = found[z]
         guessed = keypool[high[0]]
-        #print(f"key pool: {keypool}")
         if guessed == "Gb" and sharp:
             guessed = "F#"
         print(f"Guessed key: {guessed}")
@@ -137,7 +130,7 @@ class ChordPro():
         # standard seems to be 16px
         ourdb = R_db['webkit']
         std = 16
-        # FIXME use css heights.... set css heights first ;)
+        # fIXME use css heights.... set css heights first ;)
         gap = 6.25 # gap is between .1 and .2 so 2 or 3 px Experiment
         z = float(ourdb['zoom'])/100
         if R_type == 'blank':
@@ -161,7 +154,6 @@ class ChordPro():
             return crd
         sz = len(crd)
         mid = ""
-        #print(f"offset: {crd} by {offset}")
         if sz > 1 and crd[1] in {'#', 'b'}:
             tcrd = crd[0:2]
             if sz > 2:
@@ -176,12 +168,10 @@ class ChordPro():
             bp = mid.find('/')
             bn = mid[bp + 1:]
             mid = mid[0:bp +1]
-        #print(f"bass pos: {str(bp)} Bass note: {bn} chord {tcrd} mid: {mid}")
         cd = ChordPro.shiftnote(self, tcrd, offset, key)
         bs = ""
         if len(bn):
             bs = ChordPro.shiftnote(self, bn, offset, key)
-        #print(f"Returned chord: {cd}{mid}{bs}")
         return f"{cd}{mid}{bs}"
 
     def note2num(self, note):
@@ -227,16 +217,13 @@ class ChordPro():
         # determine if new key uses flats or sharps
         if nk in flat:
             Fl = True
-        # print(f"Key: {key} new key: {nk} note: |{note}|")
         # do the same for the real note now
         nn = ChordPro.note2num(self, note)
-        # print(f"note number {nn} note {pool[nn]}")
         nn = nn + ofs
         if nn > 11:
             nn = nn - 12
         elif nn < 0:
             nn = nn + 12
-        # print(f"fix overshoot: note number {nn} note {pool[nn]}")
         ext = ""
         nt = pool[nn]
         if nt in lower:
@@ -246,7 +233,6 @@ class ChordPro():
             else:
                 nn = nn - 1
                 ext = "#"
-        # print(f"fix if #/b note number {nn} note {pool[nn]}")
         nt = pool[nn]
         return f"{nt}{ext}"
 
@@ -278,7 +264,7 @@ class ChordPro():
             if not pagetop:
                 hfile = f'{hfile}\n<td class="page">'
                 pagetop = True
-            # TODO deal with other directives
+            # tODO deal with other directives
             # separate out lines that  start with "{" so that
             if '{t' in line and titl:
                 st = line.find(":") + 1
@@ -287,7 +273,6 @@ class ChordPro():
                 txt = line[st:end].strip()
                 ht = ChordPro.rowheight(self, R_db, 'title')
                 hfile = f'{hfile}\n<div class="title">{txt}</div>'
-                # print(f"Title line text: {txt}")
             elif '{st' in line or '{sub' in line:
                 st = line.find(":") + 1
                 end = line.find("}")
@@ -300,26 +285,21 @@ class ChordPro():
                     ht = ht + ht
                     hfile = f'{hfile}\n<div class="subtitle">{txt1}</div>'
                 hfile = f'{hfile}\n<div class="subtitle">{txt}</div>'
-                # print(f"subtitle line text: {txt}")
             elif '{auth' in line or '{art' in line:
                 st = line.find(":") + 1
                 end = line.find("}")
                 txt = line[st:end].strip()
                 ht = ChordPro.rowheight(self, R_db, 'subtitle')
                 hfile = f'{hfile}\n<div class="subtitle">{txt}</div>'
-                # print(f"author or artist line text: {txt}")
             elif '{c:' in line or 'comment' in line:
                 st = line.find(":") + 1
                 end = line.find("}")
                 txt = line[st:end].strip()
                 ht = ChordPro.rowheight(self, R_db, 'comment')
                 hfile = f'{hfile}\n<div class="comment">{txt}</div>'
-                # print(f"comment line text: {txt}")
             elif line == "\n":
                 ht = ChordPro.rowheight(self, R_db, 'blank')
-                # hfile = f'{hfile}\n<br /><br />'
                 hfile = f'{hfile}\n<br class="blank" />'
-                # print(f"blank line")
             elif '{k' in line:
                 st = line.find(":") + 1
                 end = line.find("}")
@@ -344,7 +324,6 @@ class ChordPro():
                         # line begins with [ so empty sub skip
                         continue
                     pre, bra, tail = sub.partition("]")
-                    # print(f"sline sub: |{sub}|, p: |{pre}| b: |{bra}| t: |{tail}|")
                     if bra == "":
                         #whole thing should be text, no chords
                         cline = f"{cline}<td> </td>"
@@ -360,7 +339,6 @@ class ChordPro():
                         lline = f"{lline}<td>{tail} </td>"
                 cline = f"{cline}</tr>\n"
                 lline = f"{lline}</tr>\n"
-                # print(f"table rows: {cline}{lline}")
                 hfile = f'{hfile}{cline}{lline}\n</table>'
             height = height + ht
         hfile = f"{hfile}</tr></table></body></html>\n"
@@ -371,7 +349,6 @@ class NewSetDialog(Gtk.Dialog):
 
     def __init__(self, parent):
         super().__init__(title="Add New Set List", parent=window)
-        #super().__init__(title="Add New Set List", transient_for=parent, flags=0)
         self.add_buttons(
             Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK
         )
@@ -395,7 +372,6 @@ class SearchDialog(Gtk.Dialog):
 
     def __init__(self, parent):
         super().__init__(title="Search For A Song", parent=window)
-        #super().__init__(title="Add New Set List", transient_for=parent, flags=0)
         self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
         self.set_default_size(700, 500)
         self.filePath = "none"
@@ -429,7 +405,6 @@ class SearchDialog(Gtk.Dialog):
         srchtxt = widget.get_text().lower()
         if len(srchtxt) < 4:
             return
-        print(f"search for: {srchtxt}")
         songfile = f"{config['state']['config_path']}/songs.json"
         if os.path.isfile(songfile) and os.path.getsize(songfile) > 50:
             # songfile file exists, read it in
@@ -443,6 +418,7 @@ class SearchDialog(Gtk.Dialog):
                 # from both search and searched text
                 # s = "Data!@Science#Rocks123"
                 # clean = re.sub(r'[^a-zA-Z0-9]', '', s)
+                # will remove spaces - etc.
                 if srchtxt in sdb[sfile]['name']:
                     fnd = True
                 if srchtxt in sdb[sfile]['verse']:
@@ -496,7 +472,6 @@ class SearchDialog(Gtk.Dialog):
         srchfil = self.found[idx]['file']
         # Send the OK response to the dialog
         self.response(Gtk.ResponseType.OK)
-
 
 
 class OKCancelDialog(Gtk.Dialog):
@@ -575,20 +550,20 @@ class UserConfig():
             config['state'] = {'key': "unknown"}
         state_db = config['state']
         state_db['dirty'] = False # just started nothing saveable
-        if not 'song' in state_db:
-            state_db['song'] = "0" # song number in list
-        if not 'pages' in state_db:
-            state_db['pages'] = "1" # pages in this song
-        if not 'page' in state_db:
-            state_db['page'] = "1" # page in this song
-        if not 'file' in state_db:
-            state_db['file'] = "none" # current song file name
+        #if not 'song' in state_db:
+        state_db['song'] = "0" # song number in list
+        #if not 'pages' in state_db:
+        state_db['pages'] = "1" # pages in this song
+        #if not 'page' in state_db:
+        state_db['page'] = "1" # page in this song
+        #if not 'file' in state_db:
+        state_db['file'] = "none" # current song file name
         if not 'config_path' in state_db:
             state_db['config_path'] = config_path
-        if not 'list' in state_db:
-            state_db['list'] = "0" # current list number
-        if not 'offset' in state_db:
-            state_db['offset'] = "0" # key offset of current song
+        #if not 'list' in state_db:
+        state_db['list'] = "0" # current list number
+        #if not 'offset' in state_db:
+        state_db['offset'] = "0" # key offset of current song
         if not 'main_x' in state_db:
             state_db['main_x'] = "1900" # main window width
         if not 'main_y' in state_db:
@@ -640,7 +615,6 @@ class UserConfig():
         if not 'songback' in hotdb:
             # , looks like <
             hotdb['songback'] = "comma"
-        #print("init has config, will push to widgets")
         stylezoom.set_sensitive(False)
         styletitlesz.set_sensitive(False)
         stylesubtsz.set_sensitive(False)
@@ -692,7 +666,6 @@ class UserConfig():
         getsb.set_label(config['hotkeys']['songback'])
         getku.set_label(config['hotkeys']['keyup'])
         getkd.set_label(config['hotkeys']['keydown'])
-        #print(f"INIT. GUI set, Dirty: {str(state_db['dirty'])}")
 
         # load setlist
         list_file = f"{config_path}/setlist.json"
@@ -724,7 +697,6 @@ class UserConfig():
     def fillsonglist(self):
         global config
         global lists_db
-        #print("fillsonglist")
         state = config['state']
         placeholder = 'unknown'
         # clear out list
@@ -813,7 +785,15 @@ class UserConfig():
         else:
             key1 = our_text[our_text.lower().find("{k"):]
             state['key'] = key1.split(": ")[1].split("}",1)[0].strip()
-        mainkeysign.set_text(f"Key: {state['key']}/{state['offset']}")
+        minr = ""
+        if 'm' in state['key']:
+            minr = 'm'
+        newkey = ChordPro.shiftnote(self, state['key'], state['offset'], state['key'])
+        if state['key'] == "unknown":
+            newkey = state['key']
+        if state['file'] == "none":
+            sname = "none"
+        mainkeysign.set_text(f"Key: {newkey}{minr}/({state['key']})")
         mainsongsel.remove(0)
         mainsongsel.prepend("name", sname)
         mainsongsel.set_active_id("name")
@@ -823,8 +803,6 @@ class UserConfig():
         global lists_db
         state = config['state']
         state['page'] = 1
-        #print(f"File to load {state['file']}")
-        #print(f"Top of load song, dirty: {str(state['dirty'])}")
         if not os.path.isfile(state['file']):
             read_data = f"File: {state['file']} Is missing!"
         if state['file'] == 'none':
@@ -842,7 +820,6 @@ class UserConfig():
             if read_data.lower().find("# trans") != -1:
                 os1 = read_data[read_data.lower().find("# transpose = ") + 14:]
                 state['offset'] = os1.split("\n",1)[0].strip()
-        #print(f"load song, text read, dirty: {str(state['dirty'])}")
         if read_data.lower().find("{t:") == -1:
             if read_data.lower().find("{title:") == -1:
                 # no title
@@ -861,31 +838,18 @@ class UserConfig():
         else:
             key1 = read_data[read_data.lower().find("{k"):]
             state['key'] = key1.split(": ")[1].split("}",1)[0].strip()
-        #edit_text.set_text(read_data)
-        #print(f"load song, editer filled, dirty: {str(state['dirty'])}")
-        #state['dirty'] = False
         mydirty = False
-        #print(f"load song, dirty reset, dirty: {str(state['dirty'])}")
-        #print(f"key: {state['key']}")
         if state['key'] == "unknown":
             print("try to guess key")
             state['key'] = ChordPro.keyguess(self, read_data)
             if state['key'] != "unknown":
                 read_data = f"{read_data}\n# key = {state['key']}\n\n"
                 mydirty = True
-            #state['dirty'] = True
         edit_text.set_text(read_data)
-        mainkeysign.set_text(f"Key: {state['key']}/{state['offset']}")
-        mainsongsel.remove(0)
-        mainsongsel.prepend("name", sname)
-        mainsongsel.set_active_id("name")
         adj = webkitbox.get_hadjustment()
         adj.set_value(0.0)
-        #print(f"end of load song, before chart refresh, dirty: {str(state['dirty'])}")
         Handler.refreshChart(self)
         state['dirty'] = mydirty
-        #print(f"end of load song, dirty: {str(state['dirty'])}")
-
 
     def save_setlist(self):
         global config
@@ -893,7 +857,6 @@ class UserConfig():
         state = config['state']
         # Save setlist
         list_file = f"{state['config_path']}/setlist.json"
-        #print(f"List_file: {list_file}")
         with open(list_file, 'w') as json_file:
             if json_file.writable():
                 fcntl.lockf(json_file, fcntl.LOCK_EX)
@@ -912,16 +875,10 @@ class UserConfig():
         state = config['state']
         # this should get called any time we leave the settings page
         c_file = f"{state['config_path']}/{appname}.json"
-        #print("in config save")
-        #print(f"configs: {config}")
         with open(c_file, 'w') as json_file:
-            #print("file open")
             if json_file.writable():
-                #print("file writable")
                 fcntl.lockf(json_file, fcntl.LOCK_EX)
-                #print("file locked")
             json.dump(config, json_file, indent=4)
-            #print("db dumped")
             json_file.write("\n")
             json_file.flush()
             os.fsync(json_file.fileno())
@@ -990,13 +947,11 @@ class UserConfig():
         for fullx in filelist:
             xext = "bad"
             xext = os.path.splitext(fullx)[1]
-            #print(f"file: {fullx} Ext:{xext}")
             name = 'unknown'
             author = name
             vline = name
             cline = name
             if xext in ok_ext:
-                #print(f"file: {fullx}")
                 with open(fullx, encoding="utf-8") as f:
                     read_data = f.read().lower()
                 if read_data.find("{") == -1 and read_data.find("[") == -1:
@@ -1013,12 +968,10 @@ class UserConfig():
                         name = read_data[read_data.find("{title:")+7:].split("}",1)[0].strip()
                 else:
                     name = read_data[read_data.find("{t:")+3:].split("}",1)[0].strip()
-                #print(f"file: {fullx} name: {name}")
                 if read_data.find("{composer:") == -1:
                     if read_data.find("{artist:") == -1:
                         if read_data.find("{subtitle:") == -1:
                             if read_data.find("{st:") == -1:
-                                #print(" no author")
                                 author = 'none'
                             else:
                                 author = read_data[read_data.find("{st:")+4:].split("}",1)[0].strip()
@@ -1033,18 +986,15 @@ class UserConfig():
                 if veridx != -1:
                     vline = read_data[veridx:].split("\n", 1)[1].split("\n")[0]
                     vline = UserConfig.deChordLine(vline)
-                    #print(f"Vline: {vline}")
                 if choidx != -1:
                     cline = read_data[choidx:].split("\n", 1)[1].split("\n")[0]
                     cline = UserConfig.deChordLine(cline)
-                    #print(f"Cline: {cline}")
                 songdb[fullx] = {
                     'name': name,
                     'author': author,
                     'verse': vline,
                     'chorus': cline
                     }
-        #print(f"songdb: {str(songdb)}")
         with open(song_file, 'w') as json_file:
             json.dump(songdb, json_file, indent=4)
             json_file.write("\n")
@@ -1056,7 +1006,6 @@ class UserConfig():
         for bit in line.split('['):
             if bit.find("]") != -1:
                 out = f"{out}{bit.split(']', 1)[1]}"
-                #print(f"bit: {bit}")
             else:
                 out = f"{out}{bit}"
         return out
@@ -1163,17 +1112,9 @@ class FileChooserWindow(Gtk.Window):
         self.add_filters(dialog)
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
-
-            #print("Open clicked")
             newName = dialog.get_filename()
-
-            #print(f"File selected: {newName}.")
-
         elif response == Gtk.ResponseType.CANCEL:
-
-            #print("Cancel clicked")
             newName = "none"
-
         dialog.destroy()
         return newName
 
@@ -1195,12 +1136,8 @@ class FileChooserWindow(Gtk.Window):
         self.add_filters(dialog)
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
-            #print("save clicked")
             newName = dialog.get_filename()
-            #print("File selected: " + dialog.get_filename())
-            #print(f"File selected: {newName}.")
         elif response == Gtk.ResponseType.CANCEL:
-            #print("Cancel clicked")
             newName = "none"
         dialog.destroy()
         return newName
@@ -1260,7 +1197,6 @@ class Handler:
         state['boxheight'] = str(webkitbox.get_allocated_height())
         state['main_x'] = str(window.get_allocated_width())
         state['main_y'] = str(window.get_allocated_height())
-        #print(f"New Height: {state['boxheight']}")
         self.refreshChart()
         UserConfig.Save(self)
         return
@@ -1320,8 +1256,6 @@ class Handler:
         self.refreshChart()
         UserConfig.fillsonglist(self)
         UserConfig.save_setlist(self)
-        mainkeysign.set_text(f"Key: {state['key']}/{state['offset']}")
-
 
     def PrevSongPressed(self, button):
         global config
@@ -1370,7 +1304,6 @@ class Handler:
 
     def askToSave(self):
         global config
-        #print(f"Asktosave find dirty is: {str(config['state']['dirty'])}")
         state = config['state']
         dialog = notSavedDialog(window)
         response = dialog.run()
@@ -1381,7 +1314,6 @@ class Handler:
         dialog.destroy()
         self.songsaveas()
         UserConfig.showStatus(self, "Set List Removed")
-
 
     # main window
     def NbookPageChanged(self, widget, child, new_index):
@@ -1413,28 +1345,25 @@ class Handler:
         ctxt.clear_cache()
         # Load HTML and CSS
         wview.load_html(newhtml, f"file://{state['config_path']}/")
+        UserConfig.fixsonginfo(self)
 
     def SetSelected(self, widget):
         global config
         global lists_db
         if not widget.get_sensitive():
-            # print(f"Widget sensitivity: {str(widget.get_sensitive())}")
             return
         state = config['state']
         # Selected a set list
         state['list'] = widget.get_active_id()
         state['song'] = '1'
         newname = widget.get_active_text()
-        #print(f"setselected:{state['list']}: {newname}")
         UserConfig.fillsonglist(self)
         if state['list'] == '0' or not "1" in lists_db[state['list']]['songs']:
             UserConfig.showStatus(self, "Empty Set List")
-            print("in list = 0 or empty list")
             state['song'] = '0'
             state['file'] = "none"
         else:
             our_db = lists_db[state['list']]['songs']
-            #print(f"setselected:{state['list']}: {newname}")
             state['file'] = our_db[state['song']]['file']
         UserConfig.loadsong(self)
 
@@ -1487,7 +1416,6 @@ class Handler:
     def editsavepress(self, button):
         global config
         state = config['state']
-        #print(f"save pressed with file: {state['file']}")
         if "none" in state['file']:
             self.songsaveas()
             if "none" in state['file']:
@@ -1499,9 +1427,8 @@ class Handler:
             f.write(edit_text.get_text(edtxst, edtxend, False ))
         UserConfig.showStatus(self, f"Saved to {state['file']}")
         UserConfig.fillsonglist(self)
-        UserConfig.fixsonginfo(self)
+        Handler.refreshChart(self)
         state['dirty'] = False
-
 
     def editsaveas(self, button):
         self.songsaveas()
@@ -1511,7 +1438,6 @@ class Handler:
         global lists_db
         state = config['state']
         state['file'] = getfilename.file_save()
-        #print(f"filename to save: {state['file']}")
         if "none" in state['file']:
             UserConfig.showStatus(self, "Save Abandoned")
             return
@@ -1524,7 +1450,7 @@ class Handler:
             lists_db[state['list']]['songs'][state['song']]['file'] = \
                     state['file']
             UserConfig.fillsonglist(self)
-        UserConfig.fixsonginfo(self)
+        Handler.refreshChart(self)
         state['dirty'] = False
 
     def CreateSong(self, button):
@@ -1538,10 +1464,6 @@ class Handler:
         newtext = "{title: edit me}\n{subtitle: put author here}"
         newtext2 = "\n{key: unknown}\n\n{c: Verse}\n\n"
         newtext = f"{newtext}{newtext2}"
-        mainkeysign.set_text(f"Key: {state['key']}/{state['offset']}")
-        mainsongsel.remove(0)
-        mainsongsel.prepend("name", "New Song")
-        mainsongsel.set_active_id("name")
         UserConfig.setselectfix(self)
         edit_text.set_text(newtext)
         adj = webkitbox.get_hadjustment()
@@ -1566,7 +1488,6 @@ class Handler:
             dialog.destroy()
             return
         dialog.destroy()
-        #print(f"new list:{dnewname}")
         no_of_list = len(lists_db)
         if no_of_list == 0:
             list_idx = str(1)
@@ -1580,15 +1501,12 @@ class Handler:
         }
         setselecter.append(str(list_idx), dnewname)
         setselecter.set_active_id(str(list_idx))
-        #print(f"new list all set")
         UserConfig.save_setlist(self)
-        #print(f"new list all done")
         UserConfig.showStatus(self, f"Set List: {dnewname} created")
 
 
     def textchanged(self, widget):
         global config
-        #print("dirty set in text changed")
         config['state']['dirty'] = True
 
 
@@ -1615,7 +1533,6 @@ class Handler:
         UserConfig.setselectfix(self)
         UserConfig.showStatus(self, "Set List Removed")
 
-
     def RenameListPressed(self, widget):
         global config
         global lists_db
@@ -1633,7 +1550,6 @@ class Handler:
         UserConfig.save_setlist(self)
         UserConfig.setselectfix(self)
         UserConfig.showStatus(self, f"Set List Renamed To: {dnewname}")
-
 
     def listsongselected(self, widget, row):
         global config
@@ -1689,9 +1605,6 @@ class Handler:
             dialog.destroy()
             return
         dialog.destroy()
-        #state['file'] = srchfil
-        #if state['file'] == "none":
-        #    return
         if srchfil == "none":
             return
         with open(srchfil, encoding="utf-8") as f:
@@ -1722,27 +1635,21 @@ class Handler:
         our_db = lists_db[state['list']]['songs']
         no = len(our_db)
         if no == 1:
-            #print("only one song")
             our_db.pop(str(no))
             state['song'] = '0'
             state['file'] = "none"
         else:
-            #print(f"remove Song no: {state['song']} out of: {no}")
             for x in range(int(state['song']), no):
                 next_song = str(x + 1)
                 next_db = our_db[next_song].copy()
                 our_db[str(x)] = next_db
-                #print(f"Replace this song: {str(x)} with {str(x+1)}")
-            #print(f"remove: {str(no)}")
             our_db.pop(str(no))
             if int(state['song']) == no:
                 state['song'] = str(no - 1)
             state['file'] = our_db[state['song']]['file']
-            #print(f" New current song: {state['file']}")
         UserConfig.fillsonglist(self)
         UserConfig.save_setlist(self)
         UserConfig.loadsong(self)
-
 
     def listSongDown(self, widget):
         global config
@@ -1762,8 +1669,6 @@ class Handler:
         state['song'] = next_song
         UserConfig.fillsonglist(self)
         UserConfig.save_setlist(self)
-        #print("list song down button")
-
 
     def listSongUp(self, widget):
         global config
@@ -1788,14 +1693,10 @@ class Handler:
     # Settings
     def stylechanged(self, widget):
         global config
-        # print("style changed entered")
         if not widget.get_sensitive():
-            # print(f"Widget sensitivity: {str(widget.get_sensitive())}")
             return
-        # print("settings style changed")
         webdb = config['webkit']
         webdb['zoom'] = str(stylezoom.get_value_as_int())
-        # print(f"zoom: {str(stylezoom.get_value_as_int())}")
         webdb['title']['size'] = str(styletitlesz.get_value_as_int())
         webdb['subtitle']['size'] = str(stylesubtsz.get_value_as_int())
         webdb['chords']['size'] = str(stylechordsz.get_value_as_int())
@@ -1807,12 +1708,8 @@ class Handler:
         webdb['lyrics']['color'] = stylelyricclr.get_active_id()
         webdb['comment']['color'] = stylecommentclr.get_active_id()
         config['general']['pagesize'] = str(int(450 * int(webdb['zoom']) / 100))
-        #print(webdb)
-        #print("about to save config")
         UserConfig.Save(self)
-        #print("about to save web css")
         UserConfig.save_webcss(self)
-        #print("now refresh chart")
         self.refreshChart()
 
     def getpnPress(self, widget):
@@ -1857,13 +1754,11 @@ class Handler:
         dialog = GetKeyDialog(self)
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
-            #print(f"dialcaller key: {str(dialog.ourkey)}")
             key = Gdk.keyval_name(dialog.ourkey)
         elif response == Gtk.ResponseType.CANCEL:
             UserConfig.showStatus(self, "Set hotkey Cancelled")
             dialog.destroy()
             return
-        # print(f"keyname: {key}")
         hot[kind] = key
         dialog.destroy()
         UserConfig.Save(self)
@@ -1873,7 +1768,6 @@ class Handler:
     def autosongchange(self, widget):
         global config
         if not widget.get_sensitive():
-            # print(f"Auto song change not allowed")
             return
         config['general']['autosong'] = str(widget.get_active())
         UserConfig.Save(self)
