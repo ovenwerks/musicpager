@@ -388,10 +388,11 @@
                     <property name="can-focus">False</property>
                     <child>
                       <object class="GtkButton">
-                        <property name="label" translatable="yes">Save Song</property>
+                        <property name="label" translatable="yes">_Save Song</property>
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="receives-default">True</property>
+                        <property name="use-underline">True</property>
                         <signal name="clicked" handler="editsavepress" swapped="no"/>
                         <signal name="pressed" handler="editsavepress" swapped="no"/>
                         <accelerator key="s" signal="clicked" modifiers="GDK_CONTROL_MASK"/>
@@ -404,10 +405,12 @@
                     </child>
                     <child>
                       <object class="GtkButton">
-                        <property name="label" translatable="yes">Save As</property>
+                        <property name="label" translatable="yes">Save _As</property>
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="receives-default">True</property>
+                        <property name="use-underline">True</property>
+                        <signal name="clicked" handler="editsaveas" swapped="no"/>
                         <signal name="pressed" handler="editsaveas" swapped="no"/>
                       </object>
                       <packing>
@@ -418,10 +421,11 @@
                     </child>
                     <child>
                       <object class="GtkButton">
-                        <property name="label" translatable="yes">Create new song</property>
+                        <property name="label" translatable="yes">Create _new song</property>
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="receives-default">True</property>
+                        <property name="use-underline">True</property>
                         <signal name="clicked" handler="CreateSong" swapped="no"/>
                       </object>
                       <packing>
