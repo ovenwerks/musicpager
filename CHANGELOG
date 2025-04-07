@@ -11,6 +11,7 @@ musicpager version 0.2.10
 - Move all songname and key display to one place
 - Make sure the above works with no song loaded
 - Make sure application loads with clean state
+- Create short cuts for save, save as or new in edit page
 
 musicpager version 0.2.9
 
