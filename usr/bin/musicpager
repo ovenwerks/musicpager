@@ -189,7 +189,6 @@ class ChordPro():
             nn = nn - 1
         return nn
 
-
     def shiftnote(self, note, off, key):
         # take note and return a shifted note right for new key
         # list of keys that use flats
@@ -249,13 +248,15 @@ class ChordPro():
         hfile = f"{hfile}\n</head>\n<body>"
         hfile = f'{hfile}\n<table class="doc"><tr class="pages">'
         winht = int(state['boxheight'])
-        key = 'A'
+        #key = 'A' # ???
+        key = state['key']
         height = 0.0
         state['pages'] = '1'
         pagetop = False
         titl = True
         buf = io.StringIO(strng)
         for line in buf:
+            testl = line.lower()
             if height > (winht - ChordPro.rowheight(self, R_db, 'chords')):
                 # page full
                 hfile = f'{hfile}\n</td>'
@@ -267,14 +268,14 @@ class ChordPro():
                 pagetop = True
             # tODO deal with other directives
             # separate out lines that  start with "{" so that
-            if '{t' in line and titl:
+            if '{t' in testl and titl:
                 st = line.find(":") + 1
                 end = line.find("}")
                 titl = False
                 txt = line[st:end].strip()
                 ht = ChordPro.rowheight(self, R_db, 'title')
                 hfile = f'{hfile}\n<div class="title">{txt}</div>'
-            elif '{st' in line or '{sub' in line:
+            elif '{st' in testl or '{sub' in testl:
                 st = line.find(":") + 1
                 end = line.find("}")
                 txt = line[st:end].strip()
@@ -286,13 +287,13 @@ class ChordPro():
                     ht = ht + ht
                     hfile = f'{hfile}\n<div class="subtitle">{txt1}</div>'
                 hfile = f'{hfile}\n<div class="subtitle">{txt}</div>'
-            elif '{auth' in line or '{art' in line:
+            elif '{auth' in testl or '{art' in testl:
                 st = line.find(":") + 1
                 end = line.find("}")
                 txt = line[st:end].strip()
                 ht = ChordPro.rowheight(self, R_db, 'subtitle')
                 hfile = f'{hfile}\n<div class="subtitle">{txt}</div>'
-            elif '{c:' in line or 'comment' in line:
+            elif '{c:' in testl or 'comment' in testl:
                 st = line.find(":") + 1
                 end = line.find("}")
                 txt = line[st:end].strip()
@@ -301,10 +302,11 @@ class ChordPro():
             elif line == "\n":
                 ht = ChordPro.rowheight(self, R_db, 'blank')
                 hfile = f'{hfile}\n<br class="blank" />'
-            elif '{k' in line:
-                st = line.find(":") + 1
-                end = line.find("}")
-                key = line[st:end].strip()
+            #elif '{k' in testl:
+            #    # do we need this? we already have state[key]
+            #    st = line.find(":") + 1
+            #    end = line.find("}")
+            #    key = line[st:end].strip()
             elif '{' in line:
                 # some other directive, Toss for now
                 continue
