@@ -424,7 +424,10 @@ class SearchDialog(Gtk.Dialog):
                     fnd = True
                 sv = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['verse'])
                 sc = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['chorus'])
+                si = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['number'])
                 #if srchtxt in sdb[sfile]['verse']:
+                if srch in si:
+                    fnd = True
                 if srch in sv:
                     linetx = sdb[sfile]['verse']
                     fnd = True
@@ -437,7 +440,8 @@ class SearchDialog(Gtk.Dialog):
                             'file': sfile,
                             'name': sdb[sfile]['name'],
                             'author': sdb[sfile]['author'],
-                            'line': linetx
+                            'line': linetx,
+                            'number': sdb[sfile]['number']
                         }
                     indx = indx + 1
         self.dsplylist()
@@ -451,7 +455,8 @@ class SearchDialog(Gtk.Dialog):
             for idx in self.found:
                 mysng = self.found[idx]
                 desc = f"{os.path.basename(mysng['file'])}\n"
-                desc = f"{desc}{mysng['name']} - {mysng['author']}\n"
+                desc = f"{desc}{mysng['name']} - {mysng['author']}"
+                desc = f"{desc} - {mysng['number']}\n"
                 desc = f"{desc}{mysng['line']}"
                 label = Gtk.Label.new(desc)
                 label.set_justify(Gtk.Justification.LEFT)
@@ -954,6 +959,7 @@ class UserConfig():
             author = name
             vline = name
             cline = name
+            snum = name
             if xext in ok_ext:
                 with open(fullx, encoding="utf-8") as f:
                     read_data = f.read().lower()
@@ -992,11 +998,15 @@ class UserConfig():
                 if choidx != -1:
                     cline = read_data[choidx:].split("\n", 1)[1].split("\n")[0]
                     cline = UserConfig.deChordLine(cline)
+                sngidx = read_data.find("song # ")
+                if sngidx != -1:
+                    snum = read_data[(sngidx + 6):].split("\n", 1)[0]
                 songdb[fullx] = {
                     'name': name,
                     'author': author,
                     'verse': vline,
-                    'chorus': cline
+                    'chorus': cline,
+                    'number': snum
                     }
         with open(song_file, 'w') as json_file:
             json.dump(songdb, json_file, indent=4)
