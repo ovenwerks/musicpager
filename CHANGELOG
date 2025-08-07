@@ -3,6 +3,14 @@ musicpager version 0.2.11
  [ Len Ovens ]
 - Fix search list still showed old results when no search results
 - Adjust search strings so words with dash in mid word are seen
+- Create short cuts for save, save as or new in edit page
+- Fix flats in key with sharps bug
+- Allow search for song numbers
+- Display display key in set lists
+- Fix change log entries put in wrong version
+- Fix status line showing list info when no list is loaded
+- Fix blank line height
+- Fix set list and key display shows wrong Current Key when minor
 
 musicpager version 0.2.10
 
@@ -11,9 +19,6 @@ musicpager version 0.2.10
 - Move all songname and key display to one place
 - Make sure the above works with no song loaded
 - Make sure application loads with clean state
-- Create short cuts for save, save as or new in edit page
-- Fix flats in key with sharps bug
-- Allow search for song numbers
 
 musicpager version 0.2.9
 

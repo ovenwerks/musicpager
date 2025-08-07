@@ -129,14 +129,25 @@ class ChordPro():
         '''returns the height in px of row type considering user
         set zooms'''
         # standard seems to be 16px
+        # doesn't matter since we will force 16px ;)
         ourdb = R_db['webkit']
         std = 16
-        # fIXME use css heights.... set css heights first ;)
+        # FIXME use hard pixel heights LOTS missing
+        # set this up so CSS can call here
+        # Heights we need:
+        #   Page height - might be set in state
+        #   SongLine
+        #   Title
+        #   subtitle
+        #   Comment
+        #   Chords
+        #   Lyrics
+        #   Blank
         gap = 6.25 # gap is between .1 and .2 so 2 or 3 px Experiment
         z = float(ourdb['zoom'])/100
         if R_type == 'blank':
-            # Assume a blank == <br><br> and assume <br> == gap
-            return gap * z * 2
+            # Should be our font size * 1.2
+            return std * 1.2
         l = float(ourdb[R_type]['size'])/100
         h = z * l * (std + gap)
         if R_type == 'chords':
@@ -189,14 +200,16 @@ class ChordPro():
             nn = nn - 1
         return nn
 
-    def shiftnote(self, note, off, key):
-        # take note and return a shifted note right for new key
+    def shiftkey(self, off, key):
+        # take key and return a shifted key with the right # or flat
+        #   if a minor
+
         # list of keys that use flats
         flat = "abdeFg"
         # all possible notes for changing to a number
         pool = "aAbBCdDeEFgG"
-        # pool shifted so relative minor shows major
-        mpool = "FgGaAbBCdDeE"
+        if not key[0] in pool:
+            return 'Z'
         # possible flats
         lower = "abdeg"
         #newnote = note # not used?
@@ -205,14 +218,69 @@ class ChordPro():
         kn = ChordPro.note2num(self, key)
         # correct for minor
         if "m" in key:
-            mk = mpool[kn]
-            kn = pool.find(mk, 1)
+            kn = kn + 3
         # new key after offset
         kn = kn + ofs
         if kn > 11:
             kn = kn - 12
         elif kn < 0:
             kn = kn + 12
+        elif kn > 23:
+            kn = kn - 24
+        nk = pool[kn]
+        # determine if new key uses flats or sharps
+        if nk in flat:
+            Fl = True
+        minor = ""
+        if "m" in key:
+            minor = "m"
+            # move back to rel minor
+            kn = kn - 3
+            if kn < 0:
+                kn = kn + 12
+            nk = pool[kn]
+        ext = ""
+        if nk in lower:
+            if Fl:
+                kn = kn + 1
+                if kn > 11:
+                    kn = kn - 12
+                ext = "b"
+            else:
+                kn = kn - 1
+                if kn < 0:
+                    kn = kn + 12
+                ext = "#"
+        nk = pool[kn]
+        return f"{nk}{ext}{minor}"
+
+    def shiftnote(self, note, off, key):
+        # take note and return a shifted note right for new key
+        # list of keys that use flats
+        flat = "abdeFg"
+        # all possible notes for changing to a number
+        pool = "aAbBCdDeEFgG"
+        # pool shifted so relative minor shows major
+        mpool = "FgGaAbBCdDeE"
+        if not note[0] in pool:
+            return 'Z'
+        # possible flats
+        lower = "abdeg"
+        #newnote = note # not used?
+        ofs = int(off)
+        Fl = False
+        kn = ChordPro.note2num(self, key)
+        # correct for minor
+        if "m" in key:
+            kn = kn + 3
+        # new key after offset
+        kn = kn + ofs
+        if kn > 11:
+            kn = kn - 12
+        elif kn < 0:
+            kn = kn + 12
+        if kn > 23:
+            kn = kn - 24
         nk = pool[kn]
         # determine if new key uses flats or sharps
         if nk in flat:
@@ -229,9 +297,13 @@ class ChordPro():
         if nt in lower:
             if Fl:
                 nn = nn + 1
+                if nn > 11:
+                    nn = nn - 12
                 ext = "b"
             else:
                 nn = nn - 1
+                if nn < 0:
+                    nn = nn + 12
                 ext = "#"
         nt = pool[nn]
         return f"{nt}{ext}"
@@ -248,7 +320,6 @@ class ChordPro():
         hfile = f"{hfile}\n</head>\n<body>"
         hfile = f'{hfile}\n<table class="doc"><tr class="pages">'
         winht = int(state['boxheight'])
-        #key = 'A' # ???
         key = state['key']
         height = 0.0
         state['pages'] = '1'
@@ -257,6 +328,7 @@ class ChordPro():
         buf = io.StringIO(strng)
         for line in buf:
             testl = line.lower()
+            # Chords in next line should be songline
             if height > (winht - ChordPro.rowheight(self, R_db, 'chords')):
                 # page full
                 hfile = f'{hfile}\n</td>'
@@ -266,8 +338,6 @@ class ChordPro():
             if not pagetop:
                 hfile = f'{hfile}\n<td class="page">'
                 pagetop = True
-            # tODO deal with other directives
-            # separate out lines that  start with "{" so that
             if '{t' in testl and titl:
                 st = line.find(":") + 1
                 end = line.find("}")
@@ -301,19 +371,17 @@ class ChordPro():
                 hfile = f'{hfile}\n<div class="comment">{txt}</div>'
             elif line == "\n":
                 ht = ChordPro.rowheight(self, R_db, 'blank')
-                hfile = f'{hfile}\n<br class="blank" />'
-            #elif '{k' in testl:
-            #    # do we need this? we already have state[key]
-            #    st = line.find(":") + 1
-            #    end = line.find("}")
-            #    key = line[st:end].strip()
+                hfile = f'{hfile}\n<div class="blank">&nbsp;</div>'
             elif '{' in line:
+                # TODO deal with other directives
+                # separate out lines that  start with "{" so that
                 # some other directive, Toss for now
                 continue
             elif line[0] == "#":
-                # throw these lines away too
+                # throw hidden lines away too
                 continue
             else:
+                # height should be songline
                 ht = ChordPro.rowheight(self, R_db, 'chords')
                 hfile = f'{hfile}\n<table class="songline">'
                 cline = '\n<tr class="chords">'
@@ -756,7 +824,10 @@ class UserConfig():
                 else:
                     author = read_data[read_data.lower().find("{composer:")+10:].split("}",1)[0].strip()
                 desc = f"{idx}: {name} - {author} - "
-                desc = f"{desc}Key: {key} - Key offset: {song_db['offset']}"
+                dkey = ChordPro.shiftkey(self, song_db['offset'], key)
+                if dkey != 'Z':
+                    desc = f"{desc}Key: {dkey}({key})"
+                #print(f"Key: {key} Offset: {song_db['offset']} display as: {dkey}")
             else:
                 desc = f"{idx}: File Missing: {song_db['file']}"
             label = Gtk.Label.new(desc)
@@ -793,15 +864,14 @@ class UserConfig():
         else:
             key1 = our_text[our_text.lower().find("{k"):]
             state['key'] = key1.split(": ")[1].split("}",1)[0].strip()
-        minr = ""
-        if 'm' in state['key']:
-            minr = 'm'
-        newkey = ChordPro.shiftnote(self, state['key'], state['offset'], state['key'])
+        newkey = state['key']
+        if state['offset'] != '0':
+            newkey = ChordPro.shiftkey(self, state['offset'], state['key'])
         if state['key'] == "unknown":
             newkey = state['key']
         if state['file'] == "none":
             sname = "none"
-        mainkeysign.set_text(f"Key: {newkey}{minr}/({state['key']})")
+        mainkeysign.set_text(f"Key: {newkey}/({state['key']})")
         mainsongsel.remove(0)
         mainsongsel.prepend("name", sname)
         mainsongsel.set_active_id("name")
@@ -902,15 +972,21 @@ class UserConfig():
         css_file = f"{state['config_path']}/chordpro.css"
         sl = " {"
         ft = " {\n\tfont-size: "
+        fte = "px;"
         cl = "px;\n\tcolor: "
+        lh = "\n\theight: "
         el = "\n\t}"
         zm = float(web['zoom'])/100
         fnt = 16 * zm
-        # FIXME set hard line heights so tohtml can use them
+        # FIXME use calls to CHordPro.rowheight
+        # set hard line heights so tohtml can use them
         # margins are what we need to set both table, tr and td
         # maybe use max-height calculated against font size or zoom
+        # Hmm new thought.... maybe use calls to ChordPro.rowheight
+        # instead. That way we can do all our calculations in one place.
 
         # missing songline
+        # missing blank
         css_str = "\n.doc {\n\ttable-layout: fixed;\n\talign-content: flex-start;\n\t}"
         css_str = f"\n.pages{sl}{el}" # space holder for future use
         css_str = f"{css_str}\n.page{sl}\n\tvertical-align: top;"
@@ -920,6 +996,7 @@ class UserConfig():
         slhi1 = float(web['lyrics']['size']) + float(web['chords']['size'])
         slhi2 = str(int((slhi1/100 * fnt) + (zm * 2)))
         css_str = f"{css_str}{slhi2}px;{el}"
+        css_str = f"{css_str}\n.blank{sl}\n\theight: {fnt * 1.2}px;{el}"
         for x in web:
             if not x == 'zoom':
                 fts = str(int(web[x]['size'])/100 * fnt)
@@ -1195,6 +1272,7 @@ class FileChooserWindow(Gtk.Window):
 class Handler:
     global config
     global lists_db
+    # TODO add a new button to list editor: Create new list with selected
 
     def onDestroy(self, *args):
         global config
@@ -1375,10 +1453,12 @@ class Handler:
             UserConfig.showStatus(self, "Empty Set List")
             state['song'] = '0'
             state['file'] = "none"
+            UserConfig.showStatus(self, f"No list chosen")
         else:
             our_db = lists_db[state['list']]['songs']
             state['file'] = our_db[state['song']]['file']
         UserConfig.loadsong(self)
+        UserConfig.showStatus(self, f"Loaded setlist song 1")
 
     def SongChange(self, widget):
         global config
@@ -1407,6 +1487,7 @@ class Handler:
             state['offset'] = "0"
             UserConfig.loadsong(self)
             UserConfig.setselectfix(self)
+            UserConfig.showStatus(self, f"Loaded {state['file']}")
         else:
             widget.set_active_id("name")
             return
@@ -1424,6 +1505,7 @@ class Handler:
         state['offset'] = "0"
         UserConfig.loadsong(self)
         UserConfig.setselectfix(self)
+        UserConfig.showStatus(self, f"Loaded {state['file']}")
 
     # Editor page callbacks
     def editsavepress(self, button):
@@ -1517,6 +1599,10 @@ class Handler:
         UserConfig.save_setlist(self)
         UserConfig.showStatus(self, f"Set List: {dnewname} created")
 
+    def ListFromSelect(self):
+        global config
+        # TODO Create list from selection
+        return
 
     def textchanged(self, widget):
         global config
@@ -1567,6 +1653,12 @@ class Handler:
     def listsongselected(self, widget, row):
         global config
         global lists_db
+        # TODO deal with multiple songs selected
+        #   - create new list
+        #   - delete selected
+        # selections can be shift 1st n last
+        # or control clicked
+
         state = config['state']
         # A song was selected from the list
         if row == None:

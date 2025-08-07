@@ -5,6 +5,11 @@
  things)
 
 Features we want:
+ - add midi to page turner
+    - even though pw uses jack, that part can be turned off
+        so use ALSA we are developing for linux only so a
+        multi-platform api is not needed (gui would have to change)
+
  - Improve editor
      - Edit in current key but save in default key
      - Allow Change default key
@@ -22,6 +27,13 @@ Features we want:
     - or... allow back to go back to page with chorus, then forward to
         place in song before going back. Or both but this may be easier
         to implement first and would sure be nice.
+
+ - Import html text
+    - Same problems as pdfs except:
+        if tabled it's easy
+        if mono spaced quite easy mono should be detectable
+        otherwise a conversion to mono is needed. Perhaps a button
+            for this.
 
  - print to PDF
     - probably with html to pdf
