@@ -8,7 +8,7 @@ very useful for turning chordpro files into PDF files and converting
 text files with chord over lyrics to chordpro files.... though some
 hand editing may be needed.
 
-Musicpager do not support all chordpro directives yet but more will
+Musicpager does not support all chordpro directives yet but more will
 be added as we go. However, it seems that most downloadable chordpro
 files display in a usable fashion.
 
