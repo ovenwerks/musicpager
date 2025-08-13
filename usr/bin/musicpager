@@ -126,37 +126,31 @@ class ChordPro():
         return guessed
 
     def rowheight(self, R_db, R_type):
-        '''returns the height in px of row type considering user
-        set zooms'''
+        '''returns the height in px of row type and font size
+        considering user set zooms'''
         # standard seems to be 16px
         # doesn't matter since we will force 16px ;)
         ourdb = R_db['webkit']
         std = 16
-        # FIXME use hard pixel heights LOTS missing
-        # set this up so CSS can call here
-        # Heights we need:
-        #   Page height - might be set in state
-        #   SongLine
-        #   Title
-        #   subtitle
-        #   Comment
-        #   Chords
-        #   Lyrics
-        #   Blank
-        gap = 6.25 # gap is between .1 and .2 so 2 or 3 px Experiment
+        fnt = std
         z = float(ourdb['zoom'])/100
+        ft = std * z
+        gap = float(int(ft * .4)) # gap is between .1 and .2 so 2 or 3 px Experiment
+        # gap .4 works for zoom 100, 200, 300
         if R_type == 'blank':
-            # Should be our font size * 1.2
-            return std * 1.2
-        l = float(ourdb[R_type]['size'])/100
-        h = z * l * (std + gap)
-        if R_type == 'chords':
-            extra = float(ourdb['lyrics']['size'])/100
-            ch = z * extra * (std + (gap * 2))
-            h = h + ch
-        if R_type == 'lyrics':
-            h = h + (gap * 1.5)
-        return h
+            fnt = float(int(ft))
+            h = fnt
+            # h = float(int(fnt + gap))
+        elif R_type == 'songline':
+            lyr = float(ourdb['lyrics']['size'])/100
+            cho = float(ourdb['chords']['size'])/100
+            fnt = float(int((lyr * ft) + (cho * ft)))
+            h = float(int(fnt + (gap * 2)))
+        else :
+            l = float(ourdb[R_type]['size'])/100
+            fnt = float(int(l * ft))
+            h = float(int(fnt + gap))
+        return h, fnt
 
     def getOffset(self, crd, offset, key):
         # check for | :|| words etc. Is it really a chord?
@@ -328,9 +322,9 @@ class ChordPro():
         buf = io.StringIO(strng)
         for line in buf:
             testl = line.lower()
-            # Chords in next line should be songline
-            if height > (winht - ChordPro.rowheight(self, R_db, 'chords')):
-                # page full
+            rh, dmy = ChordPro.rowheight(self, R_db, 'songline')
+            if height > (winht - rh - 0):
+                # page full, always need one songine height left
                 hfile = f'{hfile}\n</td>'
                 pagetop = False
                 height = 0.0
@@ -343,13 +337,13 @@ class ChordPro():
                 end = line.find("}")
                 titl = False
                 txt = line[st:end].strip()
-                ht = ChordPro.rowheight(self, R_db, 'title')
+                ht, dmy = ChordPro.rowheight(self, R_db, 'title')
                 hfile = f'{hfile}\n<div class="title">{txt}</div>'
             elif '{st' in testl or '{sub' in testl:
                 st = line.find(":") + 1
                 end = line.find("}")
                 txt = line[st:end].strip()
-                ht = ChordPro.rowheight(self, R_db, 'subtitle')
+                ht, dmy = ChordPro.rowheight(self, R_db, 'subtitle')
                 if len(txt) > 75:
                     splt = txt.find(' ', 60)
                     txt1 = txt[0:splt]
@@ -361,16 +355,16 @@ class ChordPro():
                 st = line.find(":") + 1
                 end = line.find("}")
                 txt = line[st:end].strip()
-                ht = ChordPro.rowheight(self, R_db, 'subtitle')
+                ht, dmy = ChordPro.rowheight(self, R_db, 'subtitle')
                 hfile = f'{hfile}\n<div class="subtitle">{txt}</div>'
             elif '{c:' in testl or 'comment' in testl:
                 st = line.find(":") + 1
                 end = line.find("}")
                 txt = line[st:end].strip()
-                ht = ChordPro.rowheight(self, R_db, 'comment')
+                ht, dmy = ChordPro.rowheight(self, R_db, 'comment')
                 hfile = f'{hfile}\n<div class="comment">{txt}</div>'
             elif line == "\n":
-                ht = ChordPro.rowheight(self, R_db, 'blank')
+                ht, dmy = ChordPro.rowheight(self, R_db, 'blank')
                 hfile = f'{hfile}\n<div class="blank">&nbsp;</div>'
             elif '{' in line:
                 # TODO deal with other directives
@@ -382,13 +376,14 @@ class ChordPro():
                 continue
             else:
                 # height should be songline
-                ht = ChordPro.rowheight(self, R_db, 'chords')
+                ht, dmy = ChordPro.rowheight(self, R_db, 'songline')
                 hfile = f'{hfile}\n<table class="songline">'
                 cline = '\n<tr class="chords">'
                 lline = '\n<tr class="lyrics">'
                 ourline = line.strip()
                 if ourline.find("[") == -1:
-                    ht = ChordPro.rowheight(self, R_db, 'lyrics')
+                    # if no chords, height = lyrics
+                    ht, dmy = ChordPro.rowheight(self, R_db, 'lyrics')
                 for sub in ourline.split('['):
                     # each sub has either one ] or none
                     if sub == "":
@@ -398,16 +393,19 @@ class ChordPro():
                     if bra == "":
                         #whole thing should be text, no chords
                         cline = f"{cline}<td> </td>"
-                        lline = f"{lline}<td>{pre} </td>"
+                        lspace = pre.replace(' ', '&nbsp;')
+                        lline = f"{lline}<td>{lspace} </td>"
                     elif not tail == "" and tail[0] == " ":
                         # lyric does not start under chord
                         pre = ChordPro.getOffset(self, pre, offset, key)
                         cline = f"{cline}<td>{pre} </td><td> </td>"
-                        lline = f"{lline}<td> </td><td>{tail} </td>"
+                        lspace = tail.replace(' ', '&nbsp;')
+                        lline = f"{lline}<td> </td><td>{lspace} </td>"
                     else:
                         pre = ChordPro.getOffset(self, pre, offset, key)
                         cline = f"{cline}<td>{pre} </td>"
-                        lline = f"{lline}<td>{tail} </td>"
+                        lspace = tail.replace(' ', '&nbsp;')
+                        lline = f"{lline}<td>{lspace} </td>"
                 cline = f"{cline}</tr>\n"
                 lline = f"{lline}</tr>\n"
                 hfile = f'{hfile}{cline}{lline}\n</table>'
@@ -619,7 +617,7 @@ class UserConfig():
             #       general - Misc params
             #       webkit  - this is how our chart looks
             #       hotkeys - Chart display hot keys
-            #       state   - WHat is going on right now
+            #       state   - What is going on right now
             #### Line below is important, creates our db
             config = {'version': "1.0"}
         if not 'state' in config:
@@ -978,30 +976,43 @@ class UserConfig():
         el = "\n\t}"
         zm = float(web['zoom'])/100
         fnt = 16 * zm
-        # FIXME use calls to CHordPro.rowheight
-        # set hard line heights so tohtml can use them
-        # margins are what we need to set both table, tr and td
-        # maybe use max-height calculated against font size or zoom
-        # Hmm new thought.... maybe use calls to ChordPro.rowheight
-        # instead. That way we can do all our calculations in one place.
-
-        # missing songline
-        # missing blank
         css_str = "\n.doc {\n\ttable-layout: fixed;\n\talign-content: flex-start;\n\t}"
-        css_str = f"\n.pages{sl}{el}" # space holder for future use
+        css_str = f"{css_str}\ntd{sl}\n\tpadding: 0px;{el}"
+        css_str = f"{css_str}\ntable{sl}\n\tborder-spacing: 0px;{el}"
+        css_str = f"{css_str}\n.pages{sl}{el}" # space holder for future use
         css_str = f"{css_str}\n.page{sl}\n\tvertical-align: top;"
         pgsz = gen['pagesize']
         css_str = f"{css_str}\n\tmin-width: {pgsz}px;{el}"
         css_str = f"{css_str}\n.songline{sl}\n\theight: "
-        slhi1 = float(web['lyrics']['size']) + float(web['chords']['size'])
-        slhi2 = str(int((slhi1/100 * fnt) + (zm * 2)))
-        css_str = f"{css_str}{slhi2}px;{el}"
-        css_str = f"{css_str}\n.blank{sl}\n\theight: {fnt * 1.2}px;{el}"
-        for x in web:
-            if not x == 'zoom':
-                fts = str(int(web[x]['size'])/100 * fnt)
-                line = f"\n.{x}{ft}{fts}{cl}{web[x]['color']};{el}"
-                css_str = f"{css_str}{line}"
+        h, f = ChordPro.rowheight(self, config, "songline")
+        css_str = f"{css_str}{f}px;{el}"
+        h, f = ChordPro.rowheight(self, config, "blank")
+        css_str = f"{css_str}\n.blank{sl}\n\theight: {h}px;{el}"
+        # title
+        h, f = ChordPro.rowheight(self, config, "title")
+        line = f"\n.title{ft}{f}{cl}{web['title']['color']};"
+        line = f"{line}\n\tmax-height: {f}px;{el}"
+        css_str = f"{css_str}{line}"
+        # subtitle
+        h, f = ChordPro.rowheight(self, config, "subtitle")
+        line = f"\n.subtitle{ft}{f}{cl}{web['subtitle']['color']};"
+        line = f"{line}\n\tmax-height: {f}px;{el}"
+        css_str = f"{css_str}{line}"
+        # comment
+        h, f = ChordPro.rowheight(self, config, "comment")
+        line = f"\n.comment{ft}{f}{cl}{web['comment']['color']};"
+        line = f"{line}\n\tmax-height: {f}px;{el}"
+        css_str = f"{css_str}{line}"
+        # chords
+        h, f = ChordPro.rowheight(self, config, "chords")
+        line = f"\n.chords{ft}{f}{cl}{web['chords']['color']};"
+        line = f"{line}\n\tmax-height: {f}px;{el}"
+        css_str = f"{css_str}{line}"
+        # lyrics
+        h, f = ChordPro.rowheight(self, config, "lyrics")
+        line = f"\n.lyrics{ft}{f}{cl}{web['lyrics']['color']};"
+        line = f"{line}\n\tmax-height: {f}px;{el}"
+        css_str = f"{css_str}{line}"
         css_str = f"{css_str}\n\n"
         with open(css_file, 'w', encoding="utf-8") as f:
             f.write(css_str)
@@ -1272,7 +1283,6 @@ class FileChooserWindow(Gtk.Window):
 class Handler:
     global config
     global lists_db
-    # TODO add a new button to list editor: Create new list with selected
 
     def onDestroy(self, *args):
         global config
@@ -1423,6 +1433,8 @@ class Handler:
         web = config['webkit']
         gen = config['general']
         # take editer_buffer and make chart
+        #bxh = webkitbox.get_allocated_height()
+        state['boxheight'] = str(webkitbox.get_allocated_height())
         edtxst = edit_text.get_start_iter()
         edtxend = edit_text.get_end_iter()
         pageStr = edit_text.get_text(edtxst, edtxend, False)
