@@ -374,6 +374,29 @@ class ChordPro():
             elif line[0] == "#":
                 # throw hidden lines away too
                 continue
+            elif '{copy' in testl or '©' in testl or '(c)' in testl:
+                if height > (winht / 2):
+                    # because these can be quite long, start new page
+                    #   if we are more than half way down
+                    hfile = f'{hfile}\n</td>'
+                    height = 0.0
+                    state['pages'] = str(int(state['pages']) + 1)
+                    hfile = f'{hfile}\n<td class="page">'
+                txt = line
+                if '{copy' in testl:
+                    st = line.find(":") + 1
+                    end = line.find("}")
+                    txt = line[st:end]
+                hite, dmy = ChordPro.rowheight(self, R_db, 'subtitle')
+                ht = 0
+                while len(txt) > 75:
+                    splt = txt.find(' ', 60)
+                    txt1 = txt[0:splt]
+                    txt = txt[splt:]
+                    ht = hite + ht
+                    hfile = f'{hfile}\n<div class="subtitle">{txt1}</div>'
+                ht = hite + ht
+                hfile = f'{hfile}\n<div class="subtitle">{txt}</div>'
             else:
                 # height should be songline
                 ht, dmy = ChordPro.rowheight(self, R_db, 'songline')

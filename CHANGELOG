@@ -1,8 +1,10 @@
-musicpager version 0.2.12
+musicpager version 1.0.0
 
  [ Len Ovens ]
 - Fix bad spacing where chords are
 - Fix pages to high for screen
+- Long copyright notices start new page and get split
+- Tag and release
 
 musicpager version 0.2.11
 
