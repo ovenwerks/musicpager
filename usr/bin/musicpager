@@ -605,7 +605,8 @@ class GetKeyDialog(Gtk.Dialog):
 
     def __init__(self, parent):
         super().__init__(title="Key Detect", parent=window)
-        self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                        Gtk.STOCK_DELETE, Gtk.ResponseType.DELETE_EVENT)
         self.set_default_size(150, 100)
         self.ourkey = 0
         label = Gtk.Label(label="Waiting for Key or Pedal Press")
@@ -665,7 +666,8 @@ class GetMIDIDialog(Gtk.Dialog):
         super().__init__(title="MIDI Detect", parent=window)
         global config
         config['midi']['select'] = True
-        self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                        Gtk.STOCK_DELETE, Gtk.ResponseType.DELETE_EVENT)
         self.set_default_size(150, 100)
         #self.ourkey = 0
         label = Gtk.Label(label="Waiting for Key or Pedal Press")
@@ -764,18 +766,18 @@ class UserConfig():
 
         if not 'midi' in config:
             # These are empty
-            config['midi'] = {'keyup': ""}
+            config['midi'] = {'keyup': "#"}
         mididb = config['midi']
         if not 'keydown' in mididb:
-            mididb['keydown'] = ""
+            mididb['keydown'] = "#"
         if not 'pagenext' in mididb:
-            mididb['pagenext'] = ""
+            mididb['pagenext'] = "#"
         if not 'pageback' in mididb:
-            mididb['pageback'] = ""
+            mididb['pageback'] = "#"
         if not 'songnext' in mididb:
-            mididb['songnext'] = ""
+            mididb['songnext'] = "#"
         if not 'songback' in mididb:
-            mididb['songback'] = ""
+            mididb['songback'] = "#"
         if not 'device' in mididb:
             mididb['device'] = "none"
         mididb['select'] = False
@@ -871,7 +873,7 @@ class UserConfig():
     def mididevicelist(self):
         global config
         condev = config['midi']['device']
-        print(f"config device: {condev}")
+        #print(f"config device: {condev}")
         mididevice.set_sensitive(False)
         mididevice.remove_all()
         mididevice.append("none", "none")
@@ -894,14 +896,13 @@ class UserConfig():
             # no device don't try to open it?
             # I think it will open a port with no connection
             return
-        print(f"old device: {oport} new port {rport}")
+        #print(f"old device: {oport} new port {rport}")
         if rport == oport:
             return
-        print(f"is_port_open returns: {str(midiin.is_port_open())}")
         if midiin.is_port_open():
-            print("close port")
+            #print("close port")
             midiin.close_port()
-            del midiin
+            #del midiin
         try:
             midiin, port_name = open_midiinput(
                 rport,
@@ -913,7 +914,7 @@ class UserConfig():
         except (IOError, ValueError) as exc:
             return "Could not open MIDI input: %s" % exc
         oport = rport
-        print(f" port name: {port_name}")
+        #print(f" port name: {port_name}")
         midiin.set_callback(MidiInputHandler(port_name))
 
     def fillsonglist(self):
@@ -2012,6 +2013,8 @@ class Handler:
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             key = Gdk.keyval_name(dialog.ourkey)
+        elif response == Gtk.ResponseType.DELETE_EVENT:
+            key = "#"
         elif response == Gtk.ResponseType.CANCEL:
             UserConfig.showStatus(self, "Set hotkey Cancelled")
             dialog.destroy()
@@ -2050,8 +2053,9 @@ class Handler:
         midi_dial = dialog
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
-            #event = Gdk.keyval_name(dialog.ourkey)
             event = midi['choice']
+        elif response == Gtk.ResponseType.DELETE_EVENT:
+            event = "#"
         elif response == Gtk.ResponseType.CANCEL:
             UserConfig.showStatus(self, "Set midi Cancelled")
             dialog.destroy()
@@ -2193,7 +2197,7 @@ midiku = builder.get_object("midiKU")
 midikd = builder.get_object("midiKD")
 mididevice = builder.get_object("midiDevice")
 midiin = rtmidi.MidiIn()
-print("midiin created")
+#print("midiin created")
 cnfctl = UserConfig()
 def gtk_style():
     css = b"""
@@ -2227,8 +2231,6 @@ textview text {
 
 gtk_style()
 # need to set default setup values
-#window_x = 1900
-#window_y = 1000
 window_x = int(config['state']['main_x'])
 window_y = int(config['state']['main_y'])
 # need to read in config file if there is one
