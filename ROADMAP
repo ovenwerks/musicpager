@@ -5,10 +5,6 @@
  things)
 
 Features we want:
- - add midi to page turner
-    - even though pw uses jack, that part can be turned off
-        so use ALSA we are developing for linux only so a
-        multi-platform api is not needed (gui would have to change)
 
  - Improve editor
      - Edit in current key but save in default key

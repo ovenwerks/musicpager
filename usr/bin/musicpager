@@ -29,11 +29,13 @@ import subprocess
 import os
 import json
 import re
+import rtmidi
 import shlex
 import shutil
 import sys
 import time
 from os.path import expanduser
+from rtmidi.midiutil import open_midiinput
 
 gi.require_version("Gtk", "3.0")
 gi.require_version('WebKit2', '4.1')
@@ -619,6 +621,58 @@ class GetKeyDialog(Gtk.Dialog):
         self.response(Gtk.ResponseType.OK)
         return True
 
+class MidiInputHandler(object):
+    def __init__(self, port):
+        global config
+        self.db = config['midi']
+        self.port = port
+        self._wallclock = time.time()
+        self.selected = True
+
+    def __call__(self, event, data=None):
+        global midi_dial
+        event, deltatime = event
+        self._wallclock += deltatime
+        # so event includes the event and time since last event or
+        #   initialization. we should not need time but keep it going
+        #   just because.
+        if not self.db['select']:
+            self.selected = True
+        if self.selected and self.db['select']:
+            self.selected = False
+            print("midi in select mode")
+            self.db['choice'] = str(event)
+            print(f"choice: {self.db['choice']}")
+            midi_dial.response(Gtk.ResponseType.OK)
+            self.db['select'] = False
+        elif str(event) == self.db['keyup']:
+            Handler.keyup(self, chrtku)
+        elif str(event) == self.db['keydown']:
+            Handler.keydown(self, chrtkd)
+        elif str(event) == self.db['pagenext']:
+            Handler.ForwardPressed(self, chrtpn)
+        elif str(event) == self.db['pageback']:
+            Handler.BackPressed(self, chrtpb)
+        elif str(event) == self.db['songnext']:
+            Handler.NextSongPressed(self, chrtsn)
+        elif str(event) == self.db['songback']:
+            Handler.PrevSongPressed(self, chrtsb)
+
+
+class GetMIDIDialog(Gtk.Dialog):
+
+    def __init__(self, parent):
+        super().__init__(title="MIDI Detect", parent=window)
+        global config
+        config['midi']['select'] = True
+        self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.set_default_size(150, 100)
+        #self.ourkey = 0
+        label = Gtk.Label(label="Waiting for Key or Pedal Press")
+        box = self.get_content_area()
+        box.add(label)
+        # self.connect("key-press-event", self.submit)
+        self.show_all()
 
 class UserConfig():
 
@@ -640,6 +694,7 @@ class UserConfig():
             #       general - Misc params
             #       webkit  - this is how our chart looks
             #       hotkeys - Chart display hot keys
+            #       midi    - Allows midi events as hot keys
             #       state   - What is going on right now
             #### Line below is important, creates our db
             config = {'version': "1.0"}
@@ -647,19 +702,13 @@ class UserConfig():
             config['state'] = {'key': "unknown"}
         state_db = config['state']
         state_db['dirty'] = False # just started nothing saveable
-        #if not 'song' in state_db:
         state_db['song'] = "0" # song number in list
-        #if not 'pages' in state_db:
         state_db['pages'] = "1" # pages in this song
-        #if not 'page' in state_db:
         state_db['page'] = "1" # page in this song
-        #if not 'file' in state_db:
         state_db['file'] = "none" # current song file name
         if not 'config_path' in state_db:
             state_db['config_path'] = config_path
-        #if not 'list' in state_db:
         state_db['list'] = "0" # current list number
-        #if not 'offset' in state_db:
         state_db['offset'] = "0" # key offset of current song
         if not 'main_x' in state_db:
             state_db['main_x'] = "1900" # main window width
@@ -712,6 +761,27 @@ class UserConfig():
         if not 'songback' in hotdb:
             # , looks like <
             hotdb['songback'] = "comma"
+
+        if not 'midi' in config:
+            # These are empty
+            config['midi'] = {'keyup': ""}
+        mididb = config['midi']
+        if not 'keydown' in mididb:
+            mididb['keydown'] = ""
+        if not 'pagenext' in mididb:
+            mididb['pagenext'] = ""
+        if not 'pageback' in mididb:
+            mididb['pageback'] = ""
+        if not 'songnext' in mididb:
+            mididb['songnext'] = ""
+        if not 'songback' in mididb:
+            mididb['songback'] = ""
+        if not 'device' in mididb:
+            mididb['device'] = "none"
+        mididb['select'] = False
+        mididb['choice'] = ""
+        mididb['port'] = "none"
+
         stylezoom.set_sensitive(False)
         styletitlesz.set_sensitive(False)
         stylesubtsz.set_sensitive(False)
@@ -755,14 +825,19 @@ class UserConfig():
         if 'True' in config['general']['autosong']:
             autosong.set_active(True)
         autosong.set_sensitive(True)
-        #accPfwd.set_text(config['hotkeys']['pagenext'])
         getpn.set_label(config['hotkeys']['pagenext'])
-        #accPbck.set_text(config['hotkeys']['pageback'])
         getpb.set_label(config['hotkeys']['pageback'])
         getsn.set_label(config['hotkeys']['songnext'])
         getsb.set_label(config['hotkeys']['songback'])
         getku.set_label(config['hotkeys']['keyup'])
         getkd.set_label(config['hotkeys']['keydown'])
+
+        midipn.set_label(config['midi']['pagenext'])
+        midipb.set_label(config['midi']['pageback'])
+        midisn.set_label(config['midi']['songnext'])
+        midisb.set_label(config['midi']['songback'])
+        midiku.set_label(config['midi']['keyup'])
+        midikd.set_label(config['midi']['keydown'])
 
         # load setlist
         list_file = f"{config_path}/setlist.json"
@@ -775,8 +850,10 @@ class UserConfig():
             lists_db = {}
         state_db['list'] = "0"
         self.setselectfix()
+        self.mididevicelist()
         self.save_webcss()
         self.sethotkeys()
+        self.midiopen()
         self.Save()
 
     def setselectfix(self):
@@ -790,6 +867,54 @@ class UserConfig():
             setselecter.append(x, name)
         setselecter.set_active_id(config['state']['list'])
         setselecter.set_sensitive(True)
+
+    def mididevicelist(self):
+        global config
+        condev = config['midi']['device']
+        print(f"config device: {condev}")
+        mididevice.set_sensitive(False)
+        mididevice.remove_all()
+        mididevice.append("none", "none")
+        if condev == 'none':
+            mididevice.set_active(0)
+        ports = range(midiin.get_port_count())
+        for x in ports:
+            thsdev = midiin.get_port_name(x)
+            mididevice.append(thsdev, thsdev)
+            if condev in thsdev:
+                mididevice.set_active(x + 1)
+        mididevice.set_sensitive(True)
+
+    def midiopen(self):
+        global config
+        global midiin
+        rport = config['midi']['device']
+        oport = config['midi']['port']
+        if rport == 'none':
+            # no device don't try to open it?
+            # I think it will open a port with no connection
+            return
+        print(f"old device: {oport} new port {rport}")
+        if rport == oport:
+            return
+        print(f"is_port_open returns: {str(midiin.is_port_open())}")
+        if midiin.is_port_open():
+            print("close port")
+            midiin.close_port()
+            del midiin
+        try:
+            midiin, port_name = open_midiinput(
+                rport,
+                use_virtual=True,
+                #api=BACKEND_MAP.get(args.backend, rtmidi.API_UNSPECIFIED),
+                api=rtmidi.API_LINUX_ALSA,
+                client_name='musicpager',
+                port_name='MIDI_input')
+        except (IOError, ValueError) as exc:
+            return "Could not open MIDI input: %s" % exc
+        oport = rport
+        print(f" port name: {port_name}")
+        midiin.set_callback(MidiInputHandler(port_name))
 
     def fillsonglist(self):
         global config
@@ -1309,8 +1434,11 @@ class Handler:
 
     def onDestroy(self, *args):
         global config
+        global midiin
         if config['state']['dirty']:
             self.askToSave()
+        midiin.close_port()
+        del midiin
         # restore screen/battery saver
         saver_interface.UnInhibit(blank)
         Gtk.main_quit()
@@ -1442,12 +1570,20 @@ class Handler:
     # main window
     def NbookPageChanged(self, widget, child, new_index):
         global settingvisit
+        # pages are:
+        #   0: Chart
+        #   1: Edit
+        #   2: Song List
+        #   3: Settings
         self.savedirty = False
         if settingvisit and (new_index != 3):
             cnfctl.Save()
-        if (new_index == 0) or (new_index ==4):
+        # if (new_index == 0) or (new_index ==4):
+        if (new_index == 0):
             self.refreshChart()
         elif (new_index == 3):
+            # Pick up any new devices
+            UserConfig.mididevicelist(self)
             settingvisit = True
 
     def refreshChart(self):
@@ -1852,43 +1988,24 @@ class Handler:
         UserConfig.save_webcss(self)
         self.refreshChart()
 
-    def getpnPress(self, widget):
-        global config
-        newlb = Handler.hotkeyset(self, 'pagenext')
+    def hotKeySet(self, widget):
+        if widget == getpn:
+            hktype = 'pagenext'
+        elif widget == getpb:
+            hktype = 'pageback'
+        elif widget == getsn:
+            hktype = 'songnext'
+        elif widget == getsb:
+            hktype = 'songback'
+        elif widget == getku:
+            hktype = 'keyup'
+        elif widget == getkd:
+            hktype = 'keydown'
+        newlb = Handler.hotkeydetect(self, hktype)
         widget.set_label(newlb)
         return
 
-    def getpbPress(self, widget):
-        global config
-        newlb = Handler.hotkeyset(self, 'pageback')
-        getpb.set_label(newlb)
-        return
-
-    def getsnPress(self, widget):
-        global config
-        newlb = Handler.hotkeyset(self, 'songnext')
-        getsn.set_label(newlb)
-        return
-
-    def getsbPress(self, widget):
-        global config
-        newlb = Handler.hotkeyset(self, 'songback')
-        getsb.set_label(newlb)
-        return
-
-    def getkuPress(self, widget):
-        global config
-        newlb = Handler.hotkeyset(self, 'keyup')
-        getku.set_label(newlb)
-        return
-
-    def getkdPress(self, widget):
-        global config
-        newlb = Handler.hotkeyset(self, 'keydown')
-        getkd.set_label(newlb)
-        return
-
-    def hotkeyset(self, kind):
+    def hotkeydetect(self, kind):
         global config
         hot = config['hotkeys']
         dialog = GetKeyDialog(self)
@@ -1904,6 +2021,56 @@ class Handler:
         UserConfig.Save(self)
         UserConfig.sethotkeys(self)
         return key
+
+    def midiKeySet(self, widget):
+        if widget == midipn:
+            mktype = 'pagenext'
+        elif widget == midipb:
+            mktype = 'pageback'
+        elif widget == midisn:
+            mktype = 'songnext'
+        elif widget == midisb:
+            mktype = 'songback'
+        elif widget == midiku:
+            mktype = 'keyup'
+        elif widget == midikd:
+            mktype = 'keydown'
+        newlb = Handler.midikeydetect(self, mktype)
+        widget.set_label(newlb)
+        return
+
+    def midikeydetect(self, kind):
+        global config
+        global midi_dial
+        midi = config['midi']
+        if midi['device'] == 'none':
+            UserConfig.showStatus(self, "No device open")
+            return
+        dialog = GetMIDIDialog(self)
+        midi_dial = dialog
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            #event = Gdk.keyval_name(dialog.ourkey)
+            event = midi['choice']
+        elif response == Gtk.ResponseType.CANCEL:
+            UserConfig.showStatus(self, "Set midi Cancelled")
+            dialog.destroy()
+            return
+        midi[kind] = event
+        dialog.destroy()
+        UserConfig.Save(self)
+        #UserConfig.midiopen(self)
+        return event
+
+    def MidiDevChanged(self, widget):
+        global config
+        if not widget.get_sensitive():
+            return
+        if newdev == config['midi']['device']:
+            return
+        newdev = widget.get_active_text()
+        config['midi']['device'] = newdev
+        UserConfig.midiopen(self)
 
     def autosongchange(self, widget):
         global config
@@ -2018,7 +2185,15 @@ getsn = builder.get_object("GetSN")
 getsb = builder.get_object("GetSB")
 getku = builder.get_object("GetKU")
 getkd = builder.get_object("GetKD")
-
+midipn = builder.get_object("midiPN")
+midipb = builder.get_object("midiPB")
+midisn = builder.get_object("midiSN")
+midisb = builder.get_object("midiSB")
+midiku = builder.get_object("midiKU")
+midikd = builder.get_object("midiKD")
+mididevice = builder.get_object("midiDevice")
+midiin = rtmidi.MidiIn()
+print("midiin created")
 cnfctl = UserConfig()
 def gtk_style():
     css = b"""

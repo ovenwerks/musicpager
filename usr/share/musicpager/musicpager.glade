@@ -1238,7 +1238,7 @@ Application Settings
                       </packing>
                     </child>
                     <child>
-                      <!-- n-columns=2 n-rows=8 -->
+                      <!-- n-columns=3 n-rows=9 -->
                       <object class="GtkGrid" id="sethotkeys">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
@@ -1333,7 +1333,7 @@ Application Settings
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">True</property>
-                            <signal name="clicked" handler="getpnPress" swapped="no"/>
+                            <signal name="clicked" handler="hotKeySet" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
@@ -1346,7 +1346,7 @@ Application Settings
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">True</property>
-                            <signal name="clicked" handler="getpbPress" swapped="no"/>
+                            <signal name="clicked" handler="hotKeySet" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
@@ -1359,7 +1359,7 @@ Application Settings
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">True</property>
-                            <signal name="clicked" handler="getsnPress" swapped="no"/>
+                            <signal name="clicked" handler="hotKeySet" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
@@ -1372,7 +1372,7 @@ Application Settings
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">True</property>
-                            <signal name="clicked" handler="getsbPress" swapped="no"/>
+                            <signal name="clicked" handler="hotKeySet" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
@@ -1385,7 +1385,7 @@ Application Settings
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">True</property>
-                            <signal name="clicked" handler="getkuPress" swapped="no"/>
+                            <signal name="clicked" handler="hotKeySet" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
@@ -1398,7 +1398,7 @@ Application Settings
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="receives-default">True</property>
-                            <signal name="clicked" handler="getkdPress" swapped="no"/>
+                            <signal name="clicked" handler="hotKeySet" swapped="no"/>
                           </object>
                           <packing>
                             <property name="left-attach">1</property>
@@ -1421,6 +1421,126 @@ Auto next song on next page if on last page</property>
                             <property name="top-attach">7</property>
                             <property name="width">2</property>
                           </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">MIDI</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">2</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="midiPN">
+                            <property name="label" translatable="yes">#</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
+                            <signal name="clicked" handler="midiKeySet" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="left-attach">2</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="midiPB">
+                            <property name="label" translatable="yes">#</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
+                            <signal name="clicked" handler="midiKeySet" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="left-attach">2</property>
+                            <property name="top-attach">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="midiSN">
+                            <property name="label" translatable="yes">#</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
+                            <signal name="clicked" handler="midiKeySet" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="left-attach">2</property>
+                            <property name="top-attach">3</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="midiSB">
+                            <property name="label" translatable="yes">#</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
+                            <signal name="clicked" handler="midiKeySet" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="left-attach">2</property>
+                            <property name="top-attach">4</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="midiKU">
+                            <property name="label" translatable="yes">#</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
+                            <signal name="clicked" handler="midiKeySet" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="left-attach">2</property>
+                            <property name="top-attach">5</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="midiKD">
+                            <property name="label" translatable="yes">#</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
+                            <signal name="clicked" handler="midiKeySet" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="left-attach">2</property>
+                            <property name="top-attach">6</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkComboBoxText" id="midiDevice">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="active">0</property>
+                            <property name="active-id">none</property>
+                            <items>
+                              <item id="none" translatable="yes">none</item>
+                            </items>
+                            <signal name="changed" handler="MidiDevChanged" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">8</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">MIDI Device</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">8</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
                         </child>
                       </object>
                       <packing>
