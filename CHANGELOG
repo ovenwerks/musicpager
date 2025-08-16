@@ -3,6 +3,8 @@ musicpager version 1.0.1
  [ Len Ovens ]
 - Add midi to use events as "hotkeys"
 - Add delete button for hotkeys and midi events
+- Fix MIDI device missing freeze
+- Fix bugs with new functionality
 
 musicpager version 1.0.0
 

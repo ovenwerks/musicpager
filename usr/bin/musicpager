@@ -903,6 +903,17 @@ class UserConfig():
             #print("close port")
             midiin.close_port()
             #del midiin
+        validport = False
+        ports = range(midiin.get_port_count())
+        for x in ports:
+            thsdev = midiin.get_port_name(x)
+            mididevice.append(thsdev, thsdev)
+            if rport in thsdev:
+                validport = True
+        if not validport:
+            UserConfig.showStatus(self, "MIDI device not available")
+            return
+
         try:
             midiin, port_name = open_midiinput(
                 rport,
@@ -2070,9 +2081,9 @@ class Handler:
         global config
         if not widget.get_sensitive():
             return
+        newdev = widget.get_active_text()
         if newdev == config['midi']['device']:
             return
-        newdev = widget.get_active_text()
         config['midi']['device'] = newdev
         UserConfig.midiopen(self)
 
