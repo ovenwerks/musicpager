@@ -642,6 +642,7 @@ class MidiInputHandler(object):
         #   in case someone is using a key on their keyboard
         #   and velocity may vary
         #   not sure about control value
+
         if not self.db['select']:
             self.selected = True
         if self.selected and self.db['select']:
@@ -1711,6 +1712,8 @@ class Handler:
         UserConfig.showStatus(self, f"Loaded {state['file']}")
 
     def noteEntered(self, widget):
+        '''This saves the top bar note to the entry
+            in the songlist only'''
         global config
         global lists_db
         state = config['state']
@@ -1718,8 +1721,27 @@ class Handler:
             return
         song = lists_db[state['list']]['songs'][state['song']]
         song['notes'] = widget.get_text()
-        # FIXME create state['notes'] or create a get song info call
-        # FIXME this needs to check for  no active list
+
+    def SaveNote(self, widget):
+        ''' This saves the topbar note and the key offset
+            to the song file'''
+        global config
+        state = config['state']
+        # check for song loaded
+        if (not os.path.isfile(state['file'])) or state['file'] == 'none':
+            UserConfig.showStatus(self, "No song Loaded to save to")
+            return
+        offsetline = f"\n# transpose = {state['offset']}"
+        noteline = f"\n# songnotes = {enternotes.get_text()}"
+        addline = f"{offsetline}{noteline}\n\n"
+        edtxst = edit_text.get_start_iter()
+        edtxend = edit_text.get_end_iter()
+        pageStr = edit_text.get_text(edtxst, edtxend, False)
+        if pageStr.lower().find("# trans") != -1:
+            pageStr = pageStr[0:pageStr.lower().find("# transpose = ")]
+        pageStr = f"{pageStr}{addline}"
+        edit_text.set_text(pageStr)
+        Handler.editsavepress(self, widget)
 
 
     # Editor page callbacks
