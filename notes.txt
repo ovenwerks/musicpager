@@ -24,6 +24,7 @@ Set list db: (all strings)
                         - index V                   number for order
                                 - file path/name    Where the song is
                                 - key offset        steps compared to key
+                                - song notes
 
 ------------------------------8<------------------------------
 Webkit.css Right now it is called chordpro.css but with this we can change that

@@ -637,6 +637,11 @@ class MidiInputHandler(object):
         # so event includes the event and time since last event or
         #   initialization. we should not need time but keep it going
         #   just because.
+        # FIXME on a two data event ignore data 2
+        #   data 2 being velocity or control value
+        #   in case someone is using a key on their keyboard
+        #   and velocity may vary
+        #   not sure about control value
         if not self.db['select']:
             self.selected = True
         if self.selected and self.db['select']:
@@ -880,7 +885,9 @@ class UserConfig():
         if condev == 'none':
             mididevice.set_active(0)
         ports = range(midiin.get_port_count())
+        # FIXME add in selected device even if not connected
         for x in ports:
+            # FIXME remove alsa port number as it may change
             thsdev = midiin.get_port_name(x)
             mididevice.append(thsdev, thsdev)
             if condev in thsdev:
@@ -907,7 +914,11 @@ class UserConfig():
         ports = range(midiin.get_port_count())
         for x in ports:
             thsdev = midiin.get_port_name(x)
-            mididevice.append(thsdev, thsdev)
+            # FIXME remove alsa port number to match saved
+            #   or maybe looking for rport as a substring
+            #   but then use full string or index to open
+            # FIXME #2: add option to open port with no connection
+            #   either as a fallback or on demand
             if rport in thsdev:
                 validport = True
         if not validport:
@@ -985,6 +996,7 @@ class UserConfig():
                 dkey = ChordPro.shiftkey(self, song_db['offset'], key)
                 if dkey != 'Z':
                     desc = f"{desc}Key: {dkey}({key})"
+                # TODO decide if we should show song notes in line
                 #print(f"Key: {key} Offset: {song_db['offset']} display as: {dkey}")
             else:
                 desc = f"{idx}: File Missing: {song_db['file']}"
@@ -1051,11 +1063,18 @@ class UserConfig():
             # lists might have the same song in a different key
             song_db = lists_db[state['list']]['songs'][state['song']]
             state['offset'] = song_db['offset']
+            if not 'notes' in song_db:
+                song_db['notes'] = ""
+            songnotes = song_db['notes']
         else:
             state['offset'] = "0"
+            songnotes = ""
             if read_data.lower().find("# trans") != -1:
                 os1 = read_data[read_data.lower().find("# transpose = ") + 14:]
                 state['offset'] = os1.split("\n",1)[0].strip()
+            if read_data.lower().find("# songnotes") != -1:
+                sn = read_data[read_data.lower().find("# songnotes = ") + 14:]
+                songnotes = sn.split("\n",1)[0].strip()
         if read_data.lower().find("{t:") == -1:
             if read_data.lower().find("{title:") == -1:
                 # no title
@@ -1082,6 +1101,7 @@ class UserConfig():
                 read_data = f"{read_data}\n# key = {state['key']}\n\n"
                 mydirty = True
         edit_text.set_text(read_data)
+        enternotes.set_text(songnotes)
         adj = webkitbox.get_hadjustment()
         adj.set_value(0.0)
         Handler.refreshChart(self)
@@ -1690,6 +1710,18 @@ class Handler:
         UserConfig.setselectfix(self)
         UserConfig.showStatus(self, f"Loaded {state['file']}")
 
+    def noteEntered(self, widget):
+        global config
+        global lists_db
+        state = config['state']
+        if state['list'] == 0:
+            return
+        song = lists_db[state['list']]['songs'][state['song']]
+        song['notes'] = widget.get_text()
+        # FIXME create state['notes'] or create a get song info call
+        # FIXME this needs to check for  no active list
+
+
     # Editor page callbacks
     def editsavepress(self, button):
         global config
@@ -1869,9 +1901,15 @@ class Handler:
         else:
             os1 = read_data[read_data.lower().find("# transpose = ") + 14:]
             os = os1.split("\n",1)[0].strip()
+        if read_data.lower().find("# songnotes") == -1:
+            songnotes = ""
+        else:
+            sn1 = read_data[read_data.lower().find("# songnotes = ") + 14:]
+            songnotes = sn1.split("\n",1)[0].strip()
         our_db[this_idx] = {
             'file': song_file,
-            'offset': os
+            'offset': os,
+            'notes': songnotes
         }
         UserConfig.save_setlist(self)
         UserConfig.fillsonglist(self)
@@ -1902,9 +1940,15 @@ class Handler:
         else:
             os1 = read_data[read_data.lower().find("# transpose = ") + 14:]
             os = os1.split("\n",1)[0].strip()
+        if read_data.lower().find("# songnotes") == -1:
+            songnotes = ""
+        else:
+            sn1 = read_data[read_data.lower().find("# songnotes = ") + 14:]
+            songnotes = sn1.split("\n",1)[0].strip()
         our_db[this_idx] = {
             'file': srchfil,
-            'offset': os
+            'offset': os,
+            'notes': songnotes
         }
         UserConfig.save_setlist(self)
         UserConfig.fillsonglist(self)
@@ -2065,6 +2109,8 @@ class Handler:
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             event = midi['choice']
+            # FIXME change numbers to hex for easier reading
+            #   possibly give names
         elif response == Gtk.ResponseType.DELETE_EVENT:
             event = "#"
         elif response == Gtk.ResponseType.CANCEL:
@@ -2146,6 +2192,7 @@ builder.connect_signals(Handler())
 window = builder.get_object("window_1")
 nbook = builder.get_object("Nbook_id")
 mainkeysign = builder.get_object("mainkeysign")
+enternotes = builder.get_object("enterNotes")
 mainsongsel = builder.get_object("MainSongSelect")
 maininfo = builder.get_object("MainInfo")
 setselecter = builder.get_object("setSelecter") #set select dropdown

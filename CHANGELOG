@@ -5,6 +5,7 @@ musicpager version 1.0.1
 - Add delete button for hotkeys and midi events
 - Fix MIDI device missing freeze
 - Fix bugs with new functionality
+- Add song notes to top bar save in lists_db
 
 musicpager version 1.0.0
 
