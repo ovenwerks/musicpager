@@ -8,6 +8,7 @@ musicpager version 1.0.1
 - Add song notes to top bar save in lists_db
 - Allow save notes to song file as a commented out line
 - Added html documentation
+- MIDI device has differing device index Fix
 
 musicpager version 1.0.0
 

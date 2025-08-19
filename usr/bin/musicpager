@@ -885,14 +885,18 @@ class UserConfig():
         mididevice.append("none", "none")
         if condev == 'none':
             mididevice.set_active(0)
+        else:
+            mididevice.append(condev, condev)
+            mididevice.set_active(1)
+            # FIXME add option to open port with no connection
+            #   either as a fallback or on demand
         ports = range(midiin.get_port_count())
-        # FIXME add in selected device even if not connected
         for x in ports:
-            # FIXME remove alsa port number as it may change
-            thsdev = midiin.get_port_name(x)
-            mididevice.append(thsdev, thsdev)
+            devraw = midiin.get_port_name(x)
+            thsdev = devraw[0:devraw.rfind(" ")]
             if condev in thsdev:
-                mididevice.set_active(x + 1)
+                break
+            mididevice.append(thsdev, thsdev)
         mididevice.set_sensitive(True)
 
     def midiopen(self):
@@ -915,14 +919,11 @@ class UserConfig():
         ports = range(midiin.get_port_count())
         for x in ports:
             thsdev = midiin.get_port_name(x)
-            # FIXME remove alsa port number to match saved
-            #   or maybe looking for rport as a substring
-            #   but then use full string or index to open
-            # FIXME #2: add option to open port with no connection
-            #   either as a fallback or on demand
             if rport in thsdev:
                 validport = True
         if not validport:
+            # FIXME fall back to no port connect
+            # None is no port not "None"
             UserConfig.showStatus(self, "MIDI device not available")
             return
 
@@ -1943,6 +1944,7 @@ class Handler:
         state = config['state']
         # Add a song to the list
         # TODO consider scanning songs again... maybe try anyway
+        #   or just raw search
         # TODO consider search against author too
         placeholder = "blank"
         our_db = lists_db[state['list']]['songs']
