@@ -1942,6 +1942,8 @@ class Handler:
         global srchfil
         state = config['state']
         # Add a song to the list
+        # TODO consider scanning songs again... maybe try anyway
+        # TODO consider search against author too
         placeholder = "blank"
         our_db = lists_db[state['list']]['songs']
         this_idx = str(len(our_db) + 1)

@@ -7,6 +7,7 @@ musicpager version 1.0.1
 - Fix bugs with new functionality
 - Add song notes to top bar save in lists_db
 - Allow save notes to song file as a commented out line
+- Added html documentation
 
 musicpager version 1.0.0
 
