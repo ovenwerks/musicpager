@@ -36,11 +36,13 @@ import sys
 import time
 from os.path import expanduser
 from rtmidi.midiutil import open_midiinput
+from rtmidi.midiconstants import (CHANNEL_PRESSURE, CONTROLLER_CHANGE, NOTE_ON,
+                                  NOTE_OFF, PITCH_BEND, POLY_PRESSURE, PROGRAM_CHANGE)
 
 gi.require_version("Gtk", "3.0")
 gi.require_version('WebKit2', '4.1')
 
-from gi.repository import Gtk, Gdk, Pango, WebKit2
+from gi.repository import Gtk, Gdk, Pango, WebKit2, GLib
 
 # any module might be in local in some cases
 global install_path
@@ -628,42 +630,36 @@ class MidiInputHandler(object):
         self.db = config['midi']
         self.port = port
         self._wallclock = time.time()
-        self.selected = True
 
     def __call__(self, event, data=None):
         global midi_dial
         event, deltatime = event
         self._wallclock += deltatime
-        # so event includes the event and time since last event or
-        #   initialization. we should not need time but keep it going
-        #   just because.
-        # FIXME on a two data event ignore data 2
-        #   data 2 being velocity or control value
-        #   in case someone is using a key on their keyboard
-        #   and velocity may vary
-        #   not sure about control value
-
-        if not self.db['select']:
-            self.selected = True
-        if self.selected and self.db['select']:
-            self.selected = False
+        rvalid = True
+        if event[0] < 0xF0:
+            status = event[0] & 0xF0
+        else:
+            status = event[0]
+        if status == POLY_PRESSURE or status == CHANNEL_PRESSURE or status == PITCH_BEND:
+                #print("POLY_PRESSURE, CHANNEL_PRESSURE and PITCH_BEND not used")
+                return
+        if status == NOTE_OFF:
+            revent = [event[0], event[1]]
+        elif status == NOTE_ON:
+            if event[2] == 0:
+                # bogus note off
+                return
+            revent = [event[0], event[1]]
+        else:
+            revent = event
+        if "true" in self.db['select']:
             print("midi in select mode")
-            self.db['choice'] = str(event)
+            self.db['choice'] = str(revent)
             print(f"choice: {self.db['choice']}")
             midi_dial.response(Gtk.ResponseType.OK)
-            self.db['select'] = False
-        elif str(event) == self.db['keyup']:
-            Handler.keyup(self, chrtku)
-        elif str(event) == self.db['keydown']:
-            Handler.keydown(self, chrtkd)
-        elif str(event) == self.db['pagenext']:
-            Handler.ForwardPressed(self, chrtpn)
-        elif str(event) == self.db['pageback']:
-            Handler.BackPressed(self, chrtpb)
-        elif str(event) == self.db['songnext']:
-            Handler.NextSongPressed(self, chrtsn)
-        elif str(event) == self.db['songback']:
-            Handler.PrevSongPressed(self, chrtsb)
+            self.db['select'] = "false"
+        else:
+            self.db['cmd'] = str(revent)
 
 
 class GetMIDIDialog(Gtk.Dialog):
@@ -671,15 +667,13 @@ class GetMIDIDialog(Gtk.Dialog):
     def __init__(self, parent):
         super().__init__(title="MIDI Detect", parent=window)
         global config
-        config['midi']['select'] = True
+        config['midi']['select'] = "true"
         self.add_buttons(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                         Gtk.STOCK_DELETE, Gtk.ResponseType.DELETE_EVENT)
         self.set_default_size(150, 100)
-        #self.ourkey = 0
         label = Gtk.Label(label="Waiting for Key or Pedal Press")
         box = self.get_content_area()
         box.add(label)
-        # self.connect("key-press-event", self.submit)
         self.show_all()
 
 class UserConfig():
@@ -786,9 +780,10 @@ class UserConfig():
             mididb['songback'] = "#"
         if not 'device' in mididb:
             mididb['device'] = "none"
-        mididb['select'] = False
+        mididb['select'] = "false"
         mididb['choice'] = ""
         mididb['port'] = "none"
+        mididb['cmd'] = "none"
 
         stylezoom.set_sensitive(False)
         styletitlesz.set_sensitive(False)
@@ -882,14 +877,15 @@ class UserConfig():
         #print(f"config device: {condev}")
         mididevice.set_sensitive(False)
         mididevice.remove_all()
-        mididevice.append("none", "none")
+        mididevice.append("none", "No MIDI port")
+        mididevice.append("no_connection", "Open MIDI port- no connection")
         if condev == 'none':
             mididevice.set_active(0)
+        elif condev == 'no_connection':
+            mididevice.set_active(1)
         else:
             mididevice.append(condev, condev)
-            mididevice.set_active(1)
-            # FIXME add option to open port with no connection
-            #   either as a fallback or on demand
+            mididevice.set_active(2)
         ports = range(midiin.get_port_count())
         for x in ports:
             devraw = midiin.get_port_name(x)
@@ -905,31 +901,30 @@ class UserConfig():
         rport = config['midi']['device']
         oport = config['midi']['port']
         if rport == 'none':
-            # no device don't try to open it?
-            # I think it will open a port with no connection
             return
         #print(f"old device: {oport} new port {rport}")
         if rport == oport:
+            # we're already open
             return
         if midiin.is_port_open():
-            #print("close port")
             midiin.close_port()
-            #del midiin
+            midiin.delete()
+            midiin = rtmidi.MidiIn()
         validport = False
+        useport = None
         ports = range(midiin.get_port_count())
         for x in ports:
             thsdev = midiin.get_port_name(x)
             if rport in thsdev:
                 validport = True
         if not validport:
-            # FIXME fall back to no port connect
-            # None is no port not "None"
-            UserConfig.showStatus(self, "MIDI device not available")
-            return
+            UserConfig.showStatus(self, "MIDI device not available -not connected")
+        else:
+            useport = rport
 
         try:
             midiin, port_name = open_midiinput(
-                rport,
+                useport,
                 use_virtual=True,
                 #api=BACKEND_MAP.get(args.backend, rtmidi.API_UNSPECIFIED),
                 api=rtmidi.API_LINUX_ALSA,
@@ -946,6 +941,17 @@ class UserConfig():
         global lists_db
         state = config['state']
         placeholder = 'unknown'
+        # FIXME #1 also fill Song drop down
+        # make sure to keep first three lines or re-add them
+        # This has to be done or checked even for no list
+        # First item "name" "name text" use fixsonginfo
+        # Then "load" "Load File"
+        # Then "search" "Search For Text"
+        # Maybe clear index 3 to end
+        # Note: current song will show twice in song dropdown
+        # maybe highlight it (in both lists?)
+        # in dropdown ID should be setlist song no.
+
         # clear out list
         each = None
         while songlist.get_row_at_index(0):
@@ -1472,7 +1478,7 @@ class Handler:
         if config['state']['dirty']:
             self.askToSave()
         midiin.close_port()
-        del midiin
+        midiin.delete()
         # restore screen/battery saver
         saver_interface.UnInhibit(blank)
         Gtk.main_quit()
@@ -1539,7 +1545,7 @@ class Handler:
         if int(state['list']) > 0:
             song_db = lists_db[state['list']]['songs'][state['song']]
             song_db['offset'] = state['offset']
-        self.refreshChart()
+        Handler.refreshChart(self)
         UserConfig.fillsonglist(self)
         UserConfig.save_setlist(self)
 
@@ -1547,6 +1553,7 @@ class Handler:
         global config
         global lists_db
         state = config['state']
+        # FIXME check for songloaded and reload current song first
         if int(state['list']) == 0:
             UserConfig.showStatus(self, "No List Loaded")
             return
@@ -1568,6 +1575,7 @@ class Handler:
         global config
         global lists_db
         state = config['state']
+        # FIXME check for songloaded and reload current song first
         if int(state['list']) == 0:
             UserConfig.showStatus(self, "No List Loaded")
             return
@@ -1669,6 +1677,7 @@ class Handler:
         global config
         global srchfil
         state = config['state']
+        # FIXME drop down should also show songs in current set list
         if widget.get_active_id() == "load":
             Handler.LdSongPressed(self, widget)
             widget.set_active_id("name")
@@ -1687,6 +1696,8 @@ class Handler:
             state['file'] = srchfil
             if state['file'] == "none":
                 return
+            # FIXME leave current set list active
+            # FIXME ask if add song to list if no in it
             state['song'] = "0" # song number in list
             state['list'] = "0" # current list number
             state['offset'] = "0"
@@ -1705,6 +1716,9 @@ class Handler:
         state['file'] = getfilename.on_file_clicked(button)
         if state['file'] == "none":
             return
+        # FIXME ask if add to list
+        # FIXME add button to add current song to list if not already
+        # FIXME leave set list active
         state['song'] = "0" # song number in list
         state['list'] = "0" # current list number
         state['offset'] = "0"
@@ -1789,6 +1803,8 @@ class Handler:
     def CreateSong(self, button):
         global config
         state = config['state']
+        # FIXME leave current set list active
+        # FIXME on save or leave song ask if add to set list
         state['file'] = f"{config['general']['folder']}/newsong.txt"
         state['key'] = "unknown"
         state['song'] = "0" # song number in list
@@ -2135,18 +2151,15 @@ class Handler:
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             event = midi['choice']
-            # FIXME change numbers to hex for easier reading
-            #   possibly give names
         elif response == Gtk.ResponseType.DELETE_EVENT:
             event = "#"
         elif response == Gtk.ResponseType.CANCEL:
             UserConfig.showStatus(self, "Set midi Cancelled")
             dialog.destroy()
-            return
+            return midi[kind]
         midi[kind] = event
         dialog.destroy()
         UserConfig.Save(self)
-        #UserConfig.midiopen(self)
         return event
 
     def MidiDevChanged(self, widget):
@@ -2158,6 +2171,30 @@ class Handler:
             return
         config['midi']['device'] = newdev
         UserConfig.midiopen(self)
+
+    def midi_cmds(self):
+        '''This is a timer callback used to decouple rtmidi
+            from the commands it runs to add stabilty and
+            keep from crashing'''
+        global config
+        db = config['midi']
+        event = db['cmd']
+        if not 'none' in event:
+            print(f"got midi command: {event}")
+            if str(event) == db['keyup']:
+                chrtku.emit("clicked")
+            elif str(event) == db['keydown']:
+                chrtkd.emit("clicked")
+            elif str(event) == db['pagenext']:
+                chrtpn.emit("pressed")
+            elif str(event) == db['pageback']:
+                chrtpb.emit("pressed")
+            elif str(event) == db['songnext']:
+                chrtsn.emit("pressed")
+            elif str(event) == db['songback']:
+                chrtsb.emit("pressed")
+            db['cmd'] = 'none'
+        return True
 
     def autosongchange(self, widget):
         global config
@@ -2338,6 +2375,7 @@ blank=saver_interface.Inhibit(appname, "So I can read the music")
 
 # put our window on the screen
 window.show_all()
+timeout_id = GLib.timeout_add(250, Handler.midi_cmds, None)
 
 #start main loop
 Gtk.main()

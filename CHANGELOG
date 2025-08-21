@@ -8,7 +8,11 @@ musicpager version 1.0.1
 - Add song notes to top bar save in lists_db
 - Allow save notes to song file as a commented out line
 - Added html documentation
-- MIDI device has differing device index Fix
+- Fix MIDI device has differing device index
+- Decouple rtmidi callback from function for stability
+- Don't all pitch bend or pressure midi events
+- Don't look at note on velocity
+- Properly close old port when selecting new port
 
 musicpager version 1.0.0
 
