@@ -13,6 +13,9 @@ musicpager version 1.0.1
 - Don't all pitch bend or pressure midi events
 - Don't look at note on velocity
 - Properly close old port when selecting new port
+- Redo song select dropdown - shows list songs
+- Song drop down allows adding loaded song to list
+- Loading song or creating new song leaves list loaded
 
 musicpager version 1.0.0
 

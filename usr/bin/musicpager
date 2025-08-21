@@ -705,6 +705,7 @@ class UserConfig():
         state_db = config['state']
         state_db['dirty'] = False # just started nothing saveable
         state_db['song'] = "0" # song number in list
+        state_db['inlist'] = "false"
         state_db['pages'] = "1" # pages in this song
         state_db['page'] = "1" # page in this song
         state_db['file'] = "none" # current song file name
@@ -941,22 +942,18 @@ class UserConfig():
         global lists_db
         state = config['state']
         placeholder = 'unknown'
-        # FIXME #1 also fill Song drop down
-        # make sure to keep first three lines or re-add them
-        # This has to be done or checked even for no list
-        # First item "name" "name text" use fixsonginfo
-        # Then "load" "Load File"
-        # Then "search" "Search For Text"
-        # Maybe clear index 3 to end
-        # Note: current song will show twice in song dropdown
-        # maybe highlight it (in both lists?)
-        # in dropdown ID should be setlist song no.
 
         # clear out list
         each = None
         while songlist.get_row_at_index(0):
             each = songlist.get_row_at_index(0)
             each.destroy()
+        mainsongsel.remove_all()
+        mainsongsel.append("name", "thinking")
+        mainsongsel.append("load", "Load File")
+        mainsongsel.append("search", "Search For Text")
+        mainsongsel.append("add", "Add song to List")
+
         if state['list'] == "0":
             print("no list")
             return
@@ -1001,6 +998,7 @@ class UserConfig():
                 else:
                     author = read_data[read_data.lower().find("{composer:")+10:].split("}",1)[0].strip()
                 desc = f"{idx}: {name} - {author} - "
+                mainsongsel.append(str(idx), name)
                 dkey = ChordPro.shiftkey(self, song_db['offset'], key)
                 if dkey != 'Z':
                     desc = f"{desc}Key: {dkey}({key})"
@@ -1008,6 +1006,7 @@ class UserConfig():
                 #print(f"Key: {key} Offset: {song_db['offset']} display as: {dkey}")
             else:
                 desc = f"{idx}: File Missing: {song_db['file']}"
+                mainsongsel.append(str(idx), "File Missing")
             label = Gtk.Label.new(desc)
             label.set_justify(Gtk.Justification.LEFT)
             row = Gtk.ListBoxRow()
@@ -1017,6 +1016,7 @@ class UserConfig():
             songlist.add(row)
             label.show()
             songlist.show_all()
+        UserConfig.fixsonginfo(self)
 
     def fixsonginfo(self):
         global config
@@ -1553,7 +1553,6 @@ class Handler:
         global config
         global lists_db
         state = config['state']
-        # FIXME check for songloaded and reload current song first
         if int(state['list']) == 0:
             UserConfig.showStatus(self, "No List Loaded")
             return
@@ -1563,7 +1562,11 @@ class Handler:
             UserConfig.showStatus(self, "Already At First Song")
             return
         our_db = lists_db[state['list']]['songs']
-        new = str(int(state['song']) - 1)
+        if "false" in state['inlist']:
+            new = state['song']
+            state['inlist'] = "true"
+        else:
+            new = str(int(state['song']) - 1)
         state['song'] = new
         state['file'] = our_db[new]['file']
         UserConfig.loadsong(self)
@@ -1575,14 +1578,17 @@ class Handler:
         global config
         global lists_db
         state = config['state']
-        # FIXME check for songloaded and reload current song first
         if int(state['list']) == 0:
             UserConfig.showStatus(self, "No List Loaded")
             return
         if state['dirty']:
             self.askToSave()
         our_db = lists_db[state['list']]['songs']
-        new = str(int(state['song']) + 1)
+        if "false" in state['inlist']:
+            new = state['song']
+            state['inlist'] = "true"
+        else:
+            new = str(int(state['song']) + 1)
         no = len(our_db)
         if int(new) > no:
             UserConfig.showStatus(self, "Already At Last Song")
@@ -1677,11 +1683,24 @@ class Handler:
         global config
         global srchfil
         state = config['state']
-        # FIXME drop down should also show songs in current set list
+        if widget.get_active() > 3:
+            indx = widget.get_active_id()
+            state['song'] = str(indx)
+            state['file'] = lists_db[state['list']]['songs'][str(indx)]['file']
+            state['inlist'] = "true"
+            UserConfig.loadsong(self)
+            return
         if widget.get_active_id() == "load":
             Handler.LdSongPressed(self, widget)
             widget.set_active_id("name")
         elif widget.get_active_id() == "name":
+            return
+        elif widget.get_active_id() == "add":
+            if 'true' in state['inlist']:
+                return
+            else:
+                Handler.ListAdd(self, widget)
+                state['inlist'] = 'true'
             return
         elif widget.get_active_id() == "search":
             gen = config['general']
@@ -1693,13 +1712,10 @@ class Handler:
                 dialog.destroy()
                 return
             dialog.destroy()
-            state['file'] = srchfil
-            if state['file'] == "none":
+            if srchfil == "none":
                 return
-            # FIXME leave current set list active
-            # FIXME ask if add song to list if no in it
-            state['song'] = "0" # song number in list
-            state['list'] = "0" # current list number
+            state['file'] = srchfil
+            state['inlist'] = 'false'
             state['offset'] = "0"
             UserConfig.loadsong(self)
             UserConfig.setselectfix(self)
@@ -1713,15 +1729,12 @@ class Handler:
         state = config['state']
         if state['dirty']:
             self.askToSave()
-        state['file'] = getfilename.on_file_clicked(button)
-        if state['file'] == "none":
+        newfile = getfilename.on_file_clicked(button)
+        if newfile == "none":
             return
-        # FIXME ask if add to list
-        # FIXME add button to add current song to list if not already
-        # FIXME leave set list active
-        state['song'] = "0" # song number in list
-        state['list'] = "0" # current list number
+        state['file'] = newfile
         state['offset'] = "0"
+        state['inlist'] = 'false'
         UserConfig.loadsong(self)
         UserConfig.setselectfix(self)
         UserConfig.showStatus(self, f"Loaded {state['file']}")
@@ -1803,13 +1816,10 @@ class Handler:
     def CreateSong(self, button):
         global config
         state = config['state']
-        # FIXME leave current set list active
-        # FIXME on save or leave song ask if add to set list
         state['file'] = f"{config['general']['folder']}/newsong.txt"
         state['key'] = "unknown"
-        state['song'] = "0" # song number in list
-        state['list'] = "0" # current list number
         state['offset'] = "0"
+        state['inlist'] = "false"
         newtext = "{title: edit me}\n{subtitle: put author here}"
         newtext2 = "\n{key: unknown}\n\n{c: Verse}\n\n"
         newtext = f"{newtext}{newtext2}"
@@ -1928,9 +1938,14 @@ class Handler:
         state = config['state']
         # Add a song to the list
         placeholder = "blank"
+        if state['list'] == "0":
+            return
         our_db = lists_db[state['list']]['songs']
         this_idx = str(len(our_db) + 1)
-        song_file = getfilename.on_file_clicked(button)
+        if 'false' in state['inlist']:
+            song_file = state['file']
+        else:
+            song_file = getfilename.on_file_clicked(button)
         if song_file == "none":
             return
         with open(song_file, encoding="utf-8") as f:
@@ -2164,6 +2179,7 @@ class Handler:
 
     def MidiDevChanged(self, widget):
         global config
+        # FIXME need to able to choose backend. bluetooth devices need jack
         if not widget.get_sensitive():
             return
         newdev = widget.get_active_text()
@@ -2180,7 +2196,7 @@ class Handler:
         db = config['midi']
         event = db['cmd']
         if not 'none' in event:
-            print(f"got midi command: {event}")
+            #print(f"got midi command: {event}")
             if str(event) == db['keyup']:
                 chrtku.emit("clicked")
             elif str(event) == db['keydown']:
