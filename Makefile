@@ -28,8 +28,9 @@ install:
 	install -d $(DESTDIR)$(DATADIR)/icons/hicolor/256x256/apps
 	install -d $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps
 	install -d $(DESTDIR)$(DATADIR)/man/man1
-	install -d $(DESTDIR)$(DATADIR)/musicpager
-#	install -d $(DESTDIR)$(DATADIR)/doc/musicpager/img
+#	install -d $(DESTDIR)$(DATADIR)/musicpager
+#	install -d $(DESTDIR)$(DATADIR)/musicpager/html
+	install -d $(DESTDIR)$(DATADIR)/musicpager/html/img
 
 	install -d $(DESTDIR)$(BINDIR)
 	#install -d $(DESTDIR)$(LIBDIR)/python3/dist-packages
@@ -55,12 +56,14 @@ install:
 		$(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps
 	install -m 644 usr/share/man/man1/* \
 		$(DESTDIR)$(DATADIR)/man/man1
+	# || true in the next two comands because install doesn't like directories
 	install -m 644 usr/share/musicpager/* \
-		$(DESTDIR)$(DATADIR)/musicpager
-#	install -m 644 usr/share/doc/musicpager/* \
-#		$(DESTDIR)$(DATADIR)/doc/musicpager
-#	install -m 644 usr/share/doc/musicpager/img/* \
-#		$(DESTDIR)$(DATADIR)/doc/musicpager/img
+		$(DESTDIR)$(DATADIR)/musicpager || true
+	install	-m 644 usr/share/musicpager/html/* \
+		$(DESTDIR)$(DATADIR)/musicpager/html || true
+	install	-m 644 usr/share/musicpager/html/img/* \
+		$(DESTDIR)$(DATADIR)/musicpager/html/img
+
 
 	install -m 655 usr/bin/* \
 		$(DESTDIR)$(BINDIR)
