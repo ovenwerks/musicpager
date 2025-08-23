@@ -1,4 +1,4 @@
-musicpager version 1.0.1
+musicpager version 1.1.0
 
  [ Len Ovens ]
 - Add midi to use events as "hotkeys"
@@ -16,6 +16,7 @@ musicpager version 1.0.1
 - Redo song select dropdown - shows list songs
 - Song drop down allows adding loaded song to list
 - Loading song or creating new song leaves list loaded
+- Add choice of MIDI api so Bluetooth midi switches work
 
 musicpager version 1.0.0
 

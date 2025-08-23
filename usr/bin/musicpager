@@ -781,6 +781,8 @@ class UserConfig():
             mididb['songback'] = "#"
         if not 'device' in mididb:
             mididb['device'] = "none"
+        if not 'backend' in mididb:
+            mididb['backend'] = "alsa"
         mididb['select'] = "false"
         mididb['choice'] = ""
         mididb['port'] = "none"
@@ -842,6 +844,7 @@ class UserConfig():
         midisb.set_label(config['midi']['songback'])
         midiku.set_label(config['midi']['keyup'])
         midikd.set_label(config['midi']['keydown'])
+        midiapidrop.set_active_id(config['midi']['backend'])
 
         # load setlist
         list_file = f"{config_path}/setlist.json"
@@ -854,6 +857,7 @@ class UserConfig():
             lists_db = {}
         state_db['list'] = "0"
         self.setselectfix()
+        self.midireset()
         self.mididevicelist()
         self.save_webcss()
         self.sethotkeys()
@@ -872,8 +876,26 @@ class UserConfig():
         setselecter.set_active_id(config['state']['list'])
         setselecter.set_sensitive(True)
 
+    def midireset(self):
+        global config
+        global midiin
+        backend = config['midi']['backend']
+        if 'midiin' in globals():
+            if midiin.is_port_open():
+                midiin.close_port()
+                midiin.delete()
+        if backend == 'alsa':
+            ourapi = rtmidi.API_LINUX_ALSA
+        elif backend == 'jack':
+            ourapi = rtmidi.API_UNIX_JACK
+        else:
+            ourapi = rtmidi.API_UNSPECIFIED
+        midiin = rtmidi.MidiIn(rtapi=ourapi, name=appname)
+        return ourapi
+
     def mididevicelist(self):
         global config
+        global midiin
         condev = config['midi']['device']
         #print(f"config device: {condev}")
         mididevice.set_sensitive(False)
@@ -903,14 +925,10 @@ class UserConfig():
         oport = config['midi']['port']
         if rport == 'none':
             return
-        #print(f"old device: {oport} new port {rport}")
         if rport == oport:
             # we're already open
             return
-        if midiin.is_port_open():
-            midiin.close_port()
-            midiin.delete()
-            midiin = rtmidi.MidiIn()
+        ourapi = UserConfig.midireset(self)
         validport = False
         useport = None
         ports = range(midiin.get_port_count())
@@ -927,14 +945,12 @@ class UserConfig():
             midiin, port_name = open_midiinput(
                 useport,
                 use_virtual=True,
-                #api=BACKEND_MAP.get(args.backend, rtmidi.API_UNSPECIFIED),
-                api=rtmidi.API_LINUX_ALSA,
+                api=ourapi,
                 client_name='musicpager',
                 port_name='MIDI_input')
         except (IOError, ValueError) as exc:
             return "Could not open MIDI input: %s" % exc
         oport = rport
-        #print(f" port name: {port_name}")
         midiin.set_callback(MidiInputHandler(port_name))
 
     def fillsonglist(self):
@@ -1676,6 +1692,7 @@ class Handler:
         else:
             our_db = lists_db[state['list']]['songs']
             state['file'] = our_db[state['song']]['file']
+            state['inlist'] = "true"
         UserConfig.loadsong(self)
         UserConfig.showStatus(self, f"Loaded setlist song 1")
 
@@ -2179,13 +2196,20 @@ class Handler:
 
     def MidiDevChanged(self, widget):
         global config
-        # FIXME need to able to choose backend. bluetooth devices need jack
         if not widget.get_sensitive():
             return
         newdev = widget.get_active_text()
         if newdev == config['midi']['device']:
             return
         config['midi']['device'] = newdev
+        UserConfig.midiopen(self)
+
+    def MidiBackEnd(self, widget):
+        '''Change the MIDI backend between ALSA and Jack'''
+        global config
+        config['midi']['backend'] = widget.get_active_id()
+        UserConfig.midireset(self)
+        UserConfig.mididevicelist(self)
         UserConfig.midiopen(self)
 
     def midi_cmds(self):
@@ -2333,8 +2357,7 @@ midisb = builder.get_object("midiSB")
 midiku = builder.get_object("midiKU")
 midikd = builder.get_object("midiKD")
 mididevice = builder.get_object("midiDevice")
-midiin = rtmidi.MidiIn()
-#print("midiin created")
+midiapidrop = builder.get_object("midiapidrop")
 cnfctl = UserConfig()
 def gtk_style():
     css = b"""

@@ -751,10 +751,11 @@ Application Settings
                       </packing>
                     </child>
                     <child>
-                      <!-- n-columns=2 n-rows=8 -->
+                      <!-- n-columns=2 n-rows=10 -->
                       <object class="GtkGrid" id="ChartStyle">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
+                        <property name="row-homogeneous">True</property>
                         <child>
                           <object class="GtkBox">
                             <property name="visible">True</property>
@@ -763,7 +764,7 @@ Application Settings
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Chart Zoom</property>
+                                <property name="label" translatable="yes">Chart Zoom %</property>
                               </object>
                               <packing>
                                 <property name="expand">True</property>
@@ -802,7 +803,7 @@ Application Settings
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Chords Size as a %</property>
+                                <property name="label" translatable="yes">Chords Size in %</property>
                               </object>
                               <packing>
                                 <property name="expand">True</property>
@@ -840,7 +841,7 @@ Application Settings
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Lyrics Size as a %</property>
+                                <property name="label" translatable="yes">Lyrics Size in %</property>
                               </object>
                               <packing>
                                 <property name="expand">True</property>
@@ -878,7 +879,7 @@ Application Settings
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Title Size as a %</property>
+                                <property name="label" translatable="yes">Title Size in %</property>
                               </object>
                               <packing>
                                 <property name="expand">True</property>
@@ -916,7 +917,7 @@ Application Settings
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Subtitle Size as a %</property>
+                                <property name="label" translatable="yes">Subtitle Size in %</property>
                               </object>
                               <packing>
                                 <property name="expand">True</property>
@@ -954,7 +955,7 @@ Application Settings
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Comments Size as a %</property>
+                                <property name="label" translatable="yes">Comment Size in %</property>
                               </object>
                               <packing>
                                 <property name="expand">True</property>
@@ -1172,7 +1173,7 @@ Application Settings
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Comments Colour</property>
+                                <property name="label" translatable="yes">Comment Colour</property>
                               </object>
                               <packing>
                                 <property name="expand">True</property>
@@ -1230,6 +1231,18 @@ Application Settings
                         <child>
                           <placeholder/>
                         </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -1250,10 +1263,11 @@ Application Settings
                       </packing>
                     </child>
                     <child>
-                      <!-- n-columns=3 n-rows=9 -->
+                      <!-- n-columns=3 n-rows=10 -->
                       <object class="GtkGrid" id="sethotkeys">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
+                        <property name="row-homogeneous">True</property>
                         <property name="column-homogeneous">True</property>
                         <child>
                           <object class="GtkLabel">
@@ -1271,7 +1285,7 @@ Application Settings
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">Page forward</property>
+                            <property name="label" translatable="yes">Next Page</property>
                             <property name="justify">right</property>
                           </object>
                           <packing>
@@ -1283,7 +1297,7 @@ Application Settings
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">Page back</property>
+                            <property name="label" translatable="yes">Previous Page</property>
                             <property name="justify">right</property>
                           </object>
                           <packing>
@@ -1552,6 +1566,33 @@ Auto next song on next page if on last page</property>
                           </packing>
                         </child>
                         <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">MIDI Backend</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">9</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkComboBoxText" id="midiapidrop">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <items>
+                              <item id="jack" translatable="yes">Jack</item>
+                              <item id="alsa" translatable="yes">ALSA</item>
+                            </items>
+                            <signal name="changed" handler="MidiBackEnd" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">9</property>
+                            <property name="width">2</property>
+                          </packing>
+                        </child>
+                        <child>
                           <placeholder/>
                         </child>
                       </object>
@@ -1574,10 +1615,11 @@ Auto next song on next page if on last page</property>
                       </packing>
                     </child>
                     <child>
-                      <!-- n-columns=3 n-rows=8 -->
+                      <!-- n-columns=3 n-rows=10 -->
                       <object class="GtkGrid">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
+                        <property name="row-homogeneous">True</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
@@ -1661,6 +1703,24 @@ Auto next song on next page if on last page</property>
                             <property name="top-attach">3</property>
                             <property name="width">2</property>
                           </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
                         </child>
                         <child>
                           <placeholder/>
