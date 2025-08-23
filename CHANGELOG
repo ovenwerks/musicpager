@@ -17,6 +17,7 @@ musicpager version 1.1.0
 - Song drop down allows adding loaded song to list
 - Loading song or creating new song leaves list loaded
 - Add choice of MIDI api so Bluetooth midi switches work
+- Actually install the documentation files
 
 musicpager version 1.0.0
 

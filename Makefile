@@ -29,6 +29,7 @@ install:
 	install -d $(DESTDIR)$(DATADIR)/icons/hicolor/scalable/apps
 	install -d $(DESTDIR)$(DATADIR)/man/man1
 	install -d $(DESTDIR)$(DATADIR)/musicpager
+#	install -d $(DESTDIR)$(DATADIR)/doc/musicpager/img
 
 	install -d $(DESTDIR)$(BINDIR)
 	#install -d $(DESTDIR)$(LIBDIR)/python3/dist-packages
@@ -56,6 +57,10 @@ install:
 		$(DESTDIR)$(DATADIR)/man/man1
 	install -m 644 usr/share/musicpager/* \
 		$(DESTDIR)$(DATADIR)/musicpager
+#	install -m 644 usr/share/doc/musicpager/* \
+#		$(DESTDIR)$(DATADIR)/doc/musicpager
+#	install -m 644 usr/share/doc/musicpager/img/* \
+#		$(DESTDIR)$(DATADIR)/doc/musicpager/img
 
 	install -m 655 usr/bin/* \
 		$(DESTDIR)$(BINDIR)

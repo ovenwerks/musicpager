@@ -755,7 +755,6 @@ Application Settings
                       <object class="GtkGrid" id="ChartStyle">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="row-homogeneous">True</property>
                         <child>
                           <object class="GtkBox">
                             <property name="visible">True</property>
@@ -1267,7 +1266,6 @@ Application Settings
                       <object class="GtkGrid" id="sethotkeys">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="row-homogeneous">True</property>
                         <property name="column-homogeneous">True</property>
                         <child>
                           <object class="GtkLabel">
@@ -1619,7 +1617,6 @@ Auto next song on next page if on last page</property>
                       <object class="GtkGrid">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="row-homogeneous">True</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>

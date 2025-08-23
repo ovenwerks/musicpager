@@ -4,7 +4,7 @@
 <title>Music Pager - Top Bar</title>
 <meta name="generator" content="Bluefish 2.2.15" >
 <meta name="author" content="len" >
-<meta name="date" content="2025-08-18T20:27:53-0700" >
+<meta name="date" content="2025-08-22T22:31:16-0700" >
 <meta name="copyright" content="">
 <meta name="keywords" content="">
 <meta name="description" content="">
@@ -23,12 +23,14 @@ Finally, it has an exit button.
 <ul>
 <li>
 	<p>The song selector and display drop down.</p>
-	<img src="img/song_drop.jpg" width="282" height="178" alt="">
+	<img src="img/song_drop.jpg" alt="">
 	<ul>
 	<li>Displays title of current song.</li>
-	<li>Load a song from a filename.</li>
-	<li>Search the title, first line of verse and chorus or song number (not all songs
+	<li>Option to load a song from a filename.</li>
+	<li>Option to search the title, first line of verse and chorus or song number (not all songs
 		have verse and chorus markings).</li>
+	<li>Option to add the current song to the current set list if it is not already there.</li>
+	<li>All of the songs in the currently loaded set list.</li>
 	
 	</ul>
 </li>
@@ -57,7 +59,9 @@ Finally, it has an exit button.
 </li>
 <li>
 	<p>The exit button exits the application. If the current song has been edited but not saved,
-		a dialog will open to remind the user there have been changes and can save before quitting.</p>
+		a dialog will open to remind the user there have been changes and can save before quitting.It is
+		worth noting that if a song does not have a {key: } tag and the key was guessed, then the
+		file has been changed and needs to be saved to keep the key information.</p>
 </li>
 
 </ul>
