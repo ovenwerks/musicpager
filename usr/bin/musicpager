@@ -1128,6 +1128,7 @@ class UserConfig():
         enternotes.set_text(songnotes)
         adj = webkitbox.get_hadjustment()
         adj.set_value(0.0)
+        rdmanbut.set_active(False)
         Handler.refreshChart(self)
         state['dirty'] = mydirty
 
@@ -1602,11 +1603,6 @@ class Handler:
             else:
                 with open(manfile, encoding="utf-8") as f:
                     newhtml = f.read()
-            #newhtml = ChordPro.toHtml(self, config, pageStr, boxht, ofst, False)
-            # clear cache so that new css will be read
-            #ctxt = wview.get_context()
-            #ctxt.clear_cache()
-            # Load HTML and CSS
             wview.load_html(newhtml, f"file://{manpath}/")
 
         else:
@@ -1677,6 +1673,8 @@ class Handler:
         state = config['state']
         web = config['webkit']
         gen = config['general']
+        if rdmanbut.get_active():
+            return
         # take editer_buffer and make chart
         #bxh = webkitbox.get_allocated_height()
         state['boxheight'] = str(webkitbox.get_allocated_height())
@@ -2341,6 +2339,7 @@ pagebox = builder.get_object("pagebox")
 chrtpb = builder.get_object("chrtPBckBut")
 chrtsb = builder.get_object("chrtSBckBut")
 chrtku = builder.get_object("chrtKUpBut")
+rdmanbut = builder.get_object("RdManButton")
 chrtkd = builder.get_object("chrtKDnBut")
 chrtsn = builder.get_object("chrtSNxtBut")
 chrtpn = builder.get_object("chrtPNxtBut")

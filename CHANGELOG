@@ -18,6 +18,7 @@ musicpager version 1.1.0
 - Loading song or creating new song leaves list loaded
 - Add choice of MIDI api so Bluetooth midi switches work
 - Actually install the documentation files
+- Add read manual button to chart page
 
 musicpager version 1.0.0
 

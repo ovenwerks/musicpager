@@ -317,7 +317,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkToggleButton">
+                      <object class="GtkToggleButton" id="RdManButton">
                         <property name="label" translatable="yes">Read Manual</property>
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
