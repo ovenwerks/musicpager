@@ -1589,6 +1589,28 @@ class Handler:
         no = len(our_db)
         UserConfig.showStatus(self, f"Song {new} of {str(no)}")
 
+    def ManToggled(self, widget):
+        global config
+        if widget.get_active():
+            state = config['state']
+            web = config['webkit']
+            gen = config['general']
+            manpath = f"{install_path}/share/{appname}/html/"
+            manfile = f"{manpath}index.html"
+            if not os.path.isfile(manfile):
+                read_data = f"Manual File: {state['file']} Is missing!"
+            else:
+                with open(manfile, encoding="utf-8") as f:
+                    newhtml = f.read()
+            #newhtml = ChordPro.toHtml(self, config, pageStr, boxht, ofst, False)
+            # clear cache so that new css will be read
+            #ctxt = wview.get_context()
+            #ctxt.clear_cache()
+            # Load HTML and CSS
+            wview.load_html(newhtml, f"file://{manpath}/")
+
+        else:
+            Handler.refreshChart(self)
 
     def NextSongPressed(self, button):
         global config
