@@ -1019,8 +1019,6 @@ class UserConfig():
                 dkey = ChordPro.shiftkey(self, song_db['offset'], key)
                 if dkey != 'Z':
                     desc = f"{desc}Key: {dkey}({key})"
-                # TODO decide if we should show song notes in line
-                #print(f"Key: {key} Offset: {song_db['offset']} display as: {dkey}")
             else:
                 desc = f"{idx}: File Missing: {song_db['file']}"
                 mainsongsel.append(str(idx), "File Missing")
@@ -1817,7 +1815,7 @@ class Handler:
     def editsavepress(self, button):
         global config
         state = config['state']
-        if "none" in state['file']:
+        if "none" in state['file'] or state['file'] == f"{config['general']['folder']}/newsong.txt":
             self.songsaveas()
             if "none" in state['file']:
                 UserConfig.showStatus(self, "Save Abandoned")
@@ -1847,16 +1845,12 @@ class Handler:
         with open(state['file'], 'w', encoding="utf-8") as f:
             f.write(edit_text.get_text(edtxst, edtxend, False ))
         UserConfig.showStatus(self, f"Saved To {state['file']}")
-        if state['list'] != '0':
-            lists_db[state['list']]['songs'][state['song']]['file'] = \
-                    state['file']
-            UserConfig.fillsonglist(self)
+        UserConfig.fillsonglist(self)
         Handler.refreshChart(self)
         state['dirty'] = False
 
     def CreateSong(self, button):
         global config
-        # FIXME create song replaces list song in list for save as
         state = config['state']
         state['file'] = f"{config['general']['folder']}/newsong.txt"
         state['key'] = "unknown"
