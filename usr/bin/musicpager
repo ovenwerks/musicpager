@@ -1790,6 +1790,7 @@ class Handler:
             return
         song = lists_db[state['list']]['songs'][state['song']]
         song['notes'] = widget.get_text()
+        UserConfig.save_setlist(self)
 
     def SaveNote(self, widget):
         ''' This saves the topbar note and the key offset

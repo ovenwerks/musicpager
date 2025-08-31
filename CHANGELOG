@@ -3,6 +3,7 @@ musicpager version 1.1.1
  [ Len Ovens ]
 - Fix manual displaying wider than window
 - Fix Search list didn't clear when search line cleared
+- Fix Song notes not saved to set list
 
 musicpager version 1.1.0
 
