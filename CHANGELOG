@@ -1,3 +1,9 @@
+musicpager version 1.1.1
+
+ [ Len Ovens ]
+- Fix manual displaying wider than window
+- Fix Search list didn't clear when search line cleared
+
 musicpager version 1.1.0
 
  [ Len Ovens ]
