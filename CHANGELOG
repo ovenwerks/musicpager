@@ -4,6 +4,7 @@ musicpager version 1.1.1
 - Fix manual displaying wider than window
 - Fix Search list didn't clear when search line cleared
 - Fix Song notes not saved to set list
+- Fix Setlist add added current song should open file chooser
 
 musicpager version 1.1.0
 

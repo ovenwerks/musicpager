@@ -1737,10 +1737,9 @@ class Handler:
             return
         elif widget.get_active_id() == "add":
             if 'true' in state['inlist']:
-                # FIXME add replaces current list song
                 return
             else:
-                Handler.ListAdd(self, widget)
+                Handler.ListAdd(self, widget, False)
                 state['inlist'] = 'true'
             return
         elif widget.get_active_id() == "search":
@@ -1975,18 +1974,17 @@ class Handler:
         state['file'] = lists_db[state['list']]['songs'][str(idx)]['file']
         UserConfig.loadsong(self)
 
-    def ListAdd(self, button):
+    def ListAdd(self, button, signalled=True):
         global config
         global lists_db
         state = config['state']
         # Add a song to the list
-        # FIXME adds current song
         placeholder = "blank"
         if state['list'] == "0":
             return
         our_db = lists_db[state['list']]['songs']
         this_idx = str(len(our_db) + 1)
-        if 'false' in state['inlist']:
+        if not signalled:
             song_file = state['file']
         else:
             song_file = getfilename.on_file_clicked(button)
