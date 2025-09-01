@@ -7,6 +7,7 @@ musicpager version 1.1.1
 - Fix Setlist add added current song should open file chooser
 - Fix save as replaces current setlist song
 - Fix new song should always call save as for save
+- Add version to window decoration
 
 musicpager version 1.1.0
 

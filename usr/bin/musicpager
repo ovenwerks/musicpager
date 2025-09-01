@@ -1902,6 +1902,7 @@ class Handler:
     def ListFromSelect(self):
         global config
         # TODO Create list from selection
+        # has to be added to GUI as well
         return
 
     def textchanged(self, widget):
@@ -2301,6 +2302,7 @@ global settingvisit
 settingvisit = False
 
 appname = "musicpager"
+appversion = "version: 1.1.1"
 
 # set up our glade file
 #print(f"install path: {install_path}")
@@ -2319,7 +2321,7 @@ maininfo = builder.get_object("MainInfo")
 setselecter = builder.get_object("setSelecter") #set select dropdown
 accelgrp = Gtk.AccelGroup()
 window.set_default_icon_name('musicpager')
-window.set_title('Music Pager')
+window.set_title(f"Music Pager - {appversion}")
 window.add_accel_group(accelgrp)
 
 #editor
