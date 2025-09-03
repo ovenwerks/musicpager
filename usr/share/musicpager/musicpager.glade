@@ -745,7 +745,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <child>
-                      <object class="GtkBox">
+                      <object class="GtkBox" id="pdfpage">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <child>
@@ -949,13 +949,14 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton">
+                              <object class="GtkCheckButton" id="pdflyricsonly">
                                 <property name="label" translatable="yes">Lyrics Only</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">False</property>
                                 <property name="halign">center</property>
                                 <property name="draw-indicator">True</property>
+                                <signal name="toggled" handler="pdflyricsSet" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>

@@ -794,8 +794,15 @@ class UserConfig():
             # These are empty
             config['pdf'] = {'folder': os.path.expanduser(f"~/")}
         pdfdb = config['pdf']
+        if not 'columns' in pdfdb:
+            pdfdb['columns'] = "1"
+        if not 'lyrics' in pdfdb:
+            pdfdb['lyrics'] = "False"
+        #print(f"lyrics eval: {str(eval(pdfdb['lyrics']))}")
 
         pdffoldersel.set_current_folder(pdfdb['folder'])
+        pdfcoldrop.set_active_id(pdfdb['columns'])
+        pdflyricsonly.set_active(eval(pdfdb['lyrics']))
 
         stylezoom.set_sensitive(False)
         styletitlesz.set_sensitive(False)
@@ -2108,13 +2115,21 @@ class Handler:
     # Utilities
     def PDFfolderset(self, widget):
         global config
-        folder = widget.get_current_folder()
-        config['pdf']['folder'] = folder
+        print("pdffolderset")
+        config['pdf']['folder'] = widget.get_current_folder()
         UserConfig.Save(self)
-        UserConfig.saveSongs(self)
 
     def pdfcolumns(self, widget):
-        print(f"pdf columns changed to: {widget.get_active_id()}")
+        global config
+        print("pdfcolumns")
+        config['pdf']['folder'] = widget.get_active_id()
+        UserConfig.Save(self)
+
+    def pdflyricsSet(self, widget):
+        global config
+        print(f"pdf lyrics check changed: {str(widget.get_active())}")
+        config['pdf']['lyrics'] = str(widget.get_active())
+        UserConfig.Save(self)
 
     # Settings
     def stylechanged(self, widget):
@@ -2343,6 +2358,8 @@ newsetbuff = builder.get_object("NewSetBuff") # Buffer for dialog
 
 # utilities
 pdffoldersel = builder.get_object("pdfFolderSel")
+pdfcoldrop = builder.get_object("pdfColDrop")
+pdflyricsonly = builder.get_object("pdflyricsonly")
 
 #settings
 stylezoom = builder.get_object("chartzoom")
