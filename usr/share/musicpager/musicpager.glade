@@ -731,9 +731,8 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">
-Application Settings
-</property>
+                    <property name="label" translatable="yes">   
+   </property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -745,6 +744,260 @@ Application Settings
                   <object class="GtkNotebook">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="hexpand">True</property>
+                            <property name="label" translatable="yes">   </property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">center</property>
+                            <property name="orientation">vertical</property>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">PDF Actions</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton">
+                                <property name="label" translatable="yes">Save current song as PDF</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton">
+                                <property name="label" translatable="yes">Save set list as PDF files</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton">
+                                <property name="label" translatable="yes">Save set list as a pdf book</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">3</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton">
+                                <property name="label" translatable="yes">Open pdf in Pdf Reader</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSeparator">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="orientation">vertical</property>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">PDF Settings</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkBox">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="halign">center</property>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="label" translatable="yes">  Columns:  </property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkComboBoxText" id="pdfColDrop">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="active">0</property>
+                                    <items>
+                                      <item id="1" translatable="yes">Single</item>
+                                      <item id="2" translatable="yes">Double</item>
+                                    </items>
+                                    <signal name="changed" handler="pdfcolumns" swapped="no"/>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkBox">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="halign">center</property>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="label" translatable="yes">Folder to save PDF files in:</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkFileChooserButton" id="pdfFolderSel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="action">select-folder</property>
+                                    <property name="title" translatable="yes">Folder to save PDF to</property>
+                                    <signal name="file-set" handler="PDFfolderset" swapped="no"/>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkCheckButton">
+                                <property name="label" translatable="yes">Lyrics Only</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">False</property>
+                                <property name="halign">center</property>
+                                <property name="draw-indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">3</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">3</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="hexpand">True</property>
+                            <property name="label" translatable="yes">    </property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">4</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="tab">
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes"> PDF Utilities </property>
+                      </object>
+                      <packing>
+                        <property name="tab-fill">False</property>
+                      </packing>
+                    </child>
                     <child>
                       <!-- n-columns=2 n-rows=8 -->
                       <object class="GtkGrid" id="ChartStyle">
@@ -1228,15 +1481,19 @@ Application Settings
                           <placeholder/>
                         </child>
                       </object>
+                      <packing>
+                        <property name="position">1</property>
+                      </packing>
                     </child>
                     <child type="tab">
                       <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="halign">center</property>
-                        <property name="label" translatable="yes">Font size and Colour</property>
+                        <property name="label" translatable="yes"> Font size and Colour </property>
                       </object>
                       <packing>
+                        <property name="position">1</property>
                         <property name="tab-fill">False</property>
                       </packing>
                     </child>
@@ -1573,17 +1830,17 @@ Auto next song on next page if on last page</property>
                         </child>
                       </object>
                       <packing>
-                        <property name="position">1</property>
+                        <property name="position">2</property>
                       </packing>
                     </child>
                     <child type="tab">
                       <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Hot Keys and MIDI</property>
+                        <property name="label" translatable="yes"> Hot Keys and MIDI </property>
                       </object>
                       <packing>
-                        <property name="position">1</property>
+                        <property name="position">2</property>
                         <property name="tab-fill">False</property>
                       </packing>
                     </child>
@@ -1629,30 +1886,6 @@ Auto next song on next page if on last page</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkEntry" id="setbasefolder">
-                            <property name="visible">True</property>
-                            <property name="can-focus">True</property>
-                            <signal name="activate" handler="basefldrentry" swapped="no"/>
-                          </object>
-                          <packing>
-                            <property name="left-attach">1</property>
-                            <property name="top-attach">1</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkButton">
-                            <property name="label" translatable="yes">#</property>
-                            <property name="visible">True</property>
-                            <property name="can-focus">True</property>
-                            <property name="receives-default">True</property>
-                            <signal name="clicked" handler="baseFolder" swapped="no"/>
-                          </object>
-                          <packing>
-                            <property name="left-attach">2</property>
-                            <property name="top-attach">1</property>
-                          </packing>
-                        </child>
-                        <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
@@ -1679,6 +1912,22 @@ Auto next song on next page if on last page</property>
                           </packing>
                         </child>
                         <child>
+                          <object class="GtkFileChooserButton" id="BaseFolderSel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="action">select-folder</property>
+                            <property name="title" translatable="yes">Base Folder where Songs are kept</property>
+                            <signal name="file-set" handler="BaseFolderSet" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
                           <placeholder/>
                         </child>
                         <child>
@@ -1686,17 +1935,17 @@ Auto next song on next page if on last page</property>
                         </child>
                       </object>
                       <packing>
-                        <property name="position">2</property>
+                        <property name="position">3</property>
                       </packing>
                     </child>
                     <child type="tab">
                       <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Search Folders</property>
+                        <property name="label" translatable="yes"> Search Folders </property>
                       </object>
                       <packing>
-                        <property name="position">2</property>
+                        <property name="position">3</property>
                         <property name="tab-fill">False</property>
                       </packing>
                     </child>
@@ -1708,66 +1957,7 @@ Auto next song on next page if on last page</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">    </property>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">     </property>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="hexpand">True</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">4</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="hexpand">True</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">6</property>
-                      </packing>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">2</property>
-                  </packing>
+                  <placeholder/>
                 </child>
               </object>
               <packing>
@@ -1778,7 +1968,7 @@ Auto next song on next page if on last page</property>
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">  Settings  </property>
+                <property name="label" translatable="yes">  Utilities and Settings  </property>
               </object>
               <packing>
                 <property name="position">3</property>

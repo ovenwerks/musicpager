@@ -698,9 +698,10 @@ class UserConfig():
             #       webkit  - this is how our chart looks
             #       hotkeys - Chart display hot keys
             #       midi    - Allows midi events as hot keys
+            #       pdf     - settings for pdf saving
             #       state   - What is going on right now
             #### Line below is important, creates our db
-            config = {'version': "1.0"}
+            config = {'version': "1.2.0"}
         if not 'state' in config:
             config['state'] = {'key': "unknown"}
         state_db = config['state']
@@ -789,6 +790,13 @@ class UserConfig():
         mididb['port'] = "none"
         mididb['cmd'] = "none"
 
+        if not 'pdf' in config:
+            # These are empty
+            config['pdf'] = {'folder': os.path.expanduser(f"~/")}
+        pdfdb = config['pdf']
+
+        pdffoldersel.set_current_folder(pdfdb['folder'])
+
         stylezoom.set_sensitive(False)
         styletitlesz.set_sensitive(False)
         stylesubtsz.set_sensitive(False)
@@ -822,9 +830,7 @@ class UserConfig():
         stylechordclr.set_sensitive(True)
         stylelyricclr.set_sensitive(True)
         stylecommentclr.set_sensitive(True)
-        folderEntry.set_sensitive(False)
-        folderEntry.set_text(config['general']['folder'])
-        folderEntry.set_sensitive(True)
+        basefoldersel.set_current_folder(gendb['folder'])
         folderdepth.set_sensitive(False)
         folderdepth.set_value(int(config['general']['folderdepth']))
         folderdepth.set_sensitive(True)
@@ -1394,11 +1400,8 @@ class FileChooserWindow(Gtk.Window):
         button1 = Gtk.Button(label="Choose File")
         button1.connect("clicked", self.on_file_clicked)
         box.add(button1)
-        button2 = Gtk.Button(label="Choose Folder")
-        button2.connect("clicked", self.on_folder_clicked)
-        box.add(button2)
 
-    def on_file_clicked(self, widget):
+    def on_file_clicked(self, widget, rfolder=None):
         global config
 
         dialog = Gtk.FileChooserDialog(
@@ -1412,7 +1415,11 @@ class FileChooserWindow(Gtk.Window):
             Gtk.ResponseType.OK,
 
         )
-        dialog.set_current_folder(config['general']['folder'])
+        dialog.set_default_size(800, 400)
+        if rfolder == None:
+            dialog.set_current_folder(config['general']['folder'])
+        else:
+            dialog.set_current_folder(rfolder)
 
         self.add_filters(dialog)
         response = dialog.run()
@@ -1423,12 +1430,11 @@ class FileChooserWindow(Gtk.Window):
         dialog.destroy()
         return newName
 
-    '''def file_save(self, widget):'''
-    def file_save(self):
+    def file_save(self, rfile=None):
         global config
         state = config['state']
         dialog = Gtk.FileChooserDialog(
-            title="Please enter file", parent=self, action=Gtk.FileChooserAction.SAVE
+            title="Please enter file name", parent=self, action=Gtk.FileChooserAction.SAVE
         )
         dialog.add_buttons(
             Gtk.STOCK_CANCEL,
@@ -1437,7 +1443,11 @@ class FileChooserWindow(Gtk.Window):
             Gtk.ResponseType.OK,
 
         )
-        dialog.set_filename(state['file'])
+        dialog.set_default_size(800, 400)
+        if rfile == None:
+            dialog.set_filename(state['file'])
+        else:
+            dialog.set_filename(rfile)
         self.add_filters(dialog)
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
@@ -1462,26 +1472,6 @@ class FileChooserWindow(Gtk.Window):
         filter_any.set_name("Any files")
         filter_any.add_pattern("*")
         dialog.add_filter(filter_any)
-
-
-    def on_folder_clicked(self, widget):
-        dialog = Gtk.FileChooserDialog(
-            title="Please choose a folder",
-            parent=self,
-            action=Gtk.FileChooserAction.SELECT_FOLDER,
-        )
-        dialog.add_buttons(
-            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, "Select", Gtk.ResponseType.OK
-        )
-        dialog.set_default_size(800, 400)
-        response = dialog.run()
-        if response == Gtk.ResponseType.OK:
-            newName = dialog.get_filename()
-        elif response == Gtk.ResponseType.CANCEL:
-            print("Cancel clicked")
-            newName = "none"
-        dialog.destroy()
-        return newName
 
 
 class Handler:
@@ -2115,6 +2105,17 @@ class Handler:
         UserConfig.save_setlist(self)
 
 
+    # Utilities
+    def PDFfolderset(self, widget):
+        global config
+        folder = widget.get_current_folder()
+        config['pdf']['folder'] = folder
+        UserConfig.Save(self)
+        UserConfig.saveSongs(self)
+
+    def pdfcolumns(self, widget):
+        print(f"pdf columns changed to: {widget.get_active_id()}")
+
     # Settings
     def stylechanged(self, widget):
         global config
@@ -2262,17 +2263,9 @@ class Handler:
         config['general']['autosong'] = str(widget.get_active())
         UserConfig.Save(self)
 
-
-    def baseFolder(self, widget):
+    def BaseFolderSet(self, widget):
         global config
-        new_fldr = getfilename.on_folder_clicked(widget)
-        config['general']['folder'] = new_fldr
-        UserConfig.Save(self)
-        folderEntry.set_text(new_fldr)
-
-    def basefldrentry(self, widget):
-        global config
-        new_fldr = widget.get_text()
+        new_fldr = widget.get_current_folder()
         config['general']['folder'] = new_fldr
         UserConfig.Save(self)
         UserConfig.saveSongs(self)
@@ -2302,7 +2295,7 @@ global settingvisit
 settingvisit = False
 
 appname = "musicpager"
-appversion = "version: 1.1.1"
+appversion = "version: 1.2.0"
 
 # set up our glade file
 #print(f"install path: {install_path}")
@@ -2348,6 +2341,9 @@ chrtpn = builder.get_object("chrtPNxtBut")
 songlist = builder.get_object("songlist")
 newsetbuff = builder.get_object("NewSetBuff") # Buffer for dialog
 
+# utilities
+pdffoldersel = builder.get_object("pdfFolderSel")
+
 #settings
 stylezoom = builder.get_object("chartzoom")
 styletitlesz = builder.get_object("styletitlesz")
@@ -2361,7 +2357,7 @@ stylechordclr = builder.get_object("stylechordclr")
 stylelyricclr = builder.get_object("stylelyricclr")
 stylecommentclr = builder.get_object("stylecommentclr")
 ChartStyle = builder.get_object("ChartStyle")
-folderEntry = builder.get_object("setbasefolder")
+basefoldersel = builder.get_object("BaseFolderSel")
 folderdepth = builder.get_object("FolderDepth")
 autosong = builder.get_object("autoSong")
 # accel settings
@@ -2380,6 +2376,8 @@ midikd = builder.get_object("midiKD")
 mididevice = builder.get_object("midiDevice")
 midiapidrop = builder.get_object("midiapidrop")
 cnfctl = UserConfig()
+config['version'] = appversion
+UserConfig.Save(window)
 def gtk_style():
     css = b"""
 * {
