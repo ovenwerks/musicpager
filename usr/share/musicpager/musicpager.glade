@@ -73,6 +73,11 @@
   <object class="GtkTextBuffer" id="editor_buffer">
     <signal name="changed" handler="text_changed" swapped="no"/>
   </object>
+  <object class="GtkAdjustment" id="pdfzoomadj">
+    <property name="upper">100</property>
+    <property name="step-increment">1</property>
+    <property name="page-increment">10</property>
+  </object>
   <object class="GtkWindow" id="window_1">
     <property name="can-focus">False</property>
     <signal name="configure-event" handler="onSizeCh" swapped="no"/>
@@ -785,6 +790,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
+                                <signal name="pressed" handler="pdfSaveSong" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -798,6 +804,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
+                                <signal name="pressed" handler="pdfSaveListFiles" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -811,6 +818,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
+                                <signal name="pressed" handler="pdfSaveListBook" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -824,6 +832,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
+                                <signal name="pressed" handler="pdfOpenReader" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -962,6 +971,45 @@
                                 <property name="expand">False</property>
                                 <property name="fill">True</property>
                                 <property name="position">3</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkBox">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="halign">center</property>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="label" translatable="yes">PDF Zoom in %</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkSpinButton" id="PdfZoomSpin">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="input-purpose">number</property>
+                                    <property name="adjustment">pdfzoomadj</property>
+                                    <property name="numeric">True</property>
+                                    <signal name="value-changed" handler="pdfZoomSet" swapped="no"/>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">4</property>
                               </packing>
                             </child>
                             <child>

@@ -38,6 +38,7 @@ from os.path import expanduser
 from rtmidi.midiutil import open_midiinput
 from rtmidi.midiconstants import (CHANNEL_PRESSURE, CONTROLLER_CHANGE, NOTE_ON,
                                   NOTE_OFF, PITCH_BEND, POLY_PRESSURE, PROGRAM_CHANGE)
+from weasyprint import HTML
 
 gi.require_version("Gtk", "3.0")
 gi.require_version('WebKit2', '4.1')
@@ -316,7 +317,8 @@ class ChordPro():
         hfile = '<html>\n<head>\n<meta charset="utf-8">\n'
         hfile = f'{hfile}<link rel="stylesheet" href="chordpro.css">'
         hfile = f"{hfile}\n</head>\n<body>"
-        hfile = f'{hfile}\n<table class="doc"><tr class="pages">'
+        if not onecolumn:
+            hfile = f'{hfile}\n<table class="doc"><tr class="pages">'
         winht = int(state['boxheight'])
         key = state['key']
         height = 0.0
@@ -326,6 +328,8 @@ class ChordPro():
         buf = io.StringIO(strng)
         for line in buf:
             testl = line.lower()
+            if onecolumn:
+                height = 0.0
             rh, dmy = ChordPro.rowheight(self, R_db, 'songline')
             if height > (winht - rh - 0):
                 # page full, always need one songine height left
@@ -798,11 +802,14 @@ class UserConfig():
             pdfdb['columns'] = "1"
         if not 'lyrics' in pdfdb:
             pdfdb['lyrics'] = "False"
+        if not 'zoom' in pdfdb:
+            pdfdb['zoom'] = "100"
         #print(f"lyrics eval: {str(eval(pdfdb['lyrics']))}")
 
         pdffoldersel.set_current_folder(pdfdb['folder'])
         pdfcoldrop.set_active_id(pdfdb['columns'])
         pdflyricsonly.set_active(eval(pdfdb['lyrics']))
+        pdfzoomspin.set_value(int(pdfdb['zoom']))
 
         stylezoom.set_sensitive(False)
         styletitlesz.set_sensitive(False)
@@ -2113,6 +2120,63 @@ class Handler:
 
 
     # Utilities
+    def pdfSaveSong(self, widget):
+        global config
+        pdf = config['pdf']
+        file_name = os.path.basename(config['state']['file']).split('.')[0]
+        template = f"{pdf['folder']}/{file_name}.pdf"
+        #print(f"save song to pdf pressed, Template: {template}")
+        dial = Gtk.FileChooserDialog(
+            title="Please enter file name",
+            parent=window, action=Gtk.FileChooserAction.SAVE
+        )
+        dial.add_buttons(
+            Gtk.STOCK_CANCEL,
+            Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_SAVE,
+            Gtk.ResponseType.OK,
+
+        )
+        dial.set_default_size(800, 400)
+        filter_pdf = Gtk.FileFilter()
+        filter_pdf.set_name("PDF files")
+        filter_pdf.add_pattern("*.pdf")
+        dial.add_filter(filter_pdf)
+        filter_any = Gtk.FileFilter()
+        filter_any.set_name("Any files")
+        filter_any.add_pattern("*")
+        dial.add_filter(filter_any)
+        dial.set_filename(template)
+        dial.set_current_name(f"{file_name}.pdf")
+        response = dial.run()
+        if response == Gtk.ResponseType.OK:
+            newName = dial.get_filename()
+        elif response == Gtk.ResponseType.CANCEL:
+            dial.destroy()
+            UserConfig.showStatus(self, "Save pdf cancelled")
+            return
+        dial.destroy()
+        edtxst = edit_text.get_start_iter()
+        edtxend = edit_text.get_end_iter()
+        pageStr = edit_text.get_text(edtxst, edtxend, False)
+        ofst = config['state']['offset']
+        boxht = 1000 # not used - place holder
+        newhtml = ChordPro.toHtml(self, config, pageStr, boxht, ofst, True)
+        urlpath = f"file://{config['state']['config_path']}/"
+        HTML(string=newhtml, base_url=urlpath).write_pdf(newName)
+
+    def pdfSaveListFiles(self, widget):
+        global config
+        print("save set list to pdf files pressed")
+
+    def pdfSaveListBook(self, widget):
+        global config
+        print("save set list as pdf book pressed")
+
+    def pdfOpenReader(self, widget):
+        global config
+        print("pressed open pdf reader")
+
     def PDFfolderset(self, widget):
         global config
         print("pdffolderset")
@@ -2121,15 +2185,24 @@ class Handler:
 
     def pdfcolumns(self, widget):
         global config
-        print("pdfcolumns")
-        config['pdf']['folder'] = widget.get_active_id()
+        if config['pdf']['columns'] == widget.get_active_id():
+            return
+        config['pdf']['columns'] = widget.get_active_id()
         UserConfig.Save(self)
 
     def pdflyricsSet(self, widget):
         global config
-        print(f"pdf lyrics check changed: {str(widget.get_active())}")
+        if config['pdf']['lyrics'] == str(widget.get_active()):
+            return
         config['pdf']['lyrics'] = str(widget.get_active())
         UserConfig.Save(self)
+
+    def pdfZoomSet(self, widget):
+        global config
+        if config['pdf']['zoom'] == str(widget.get_value()):
+            return
+        config['pdf']['zoom'] = str(int(widget.get_value()))
+        print(f"pdf zoom set to: {str(widget.get_value())}")
 
     # Settings
     def stylechanged(self, widget):
@@ -2360,6 +2433,7 @@ newsetbuff = builder.get_object("NewSetBuff") # Buffer for dialog
 pdffoldersel = builder.get_object("pdfFolderSel")
 pdfcoldrop = builder.get_object("pdfColDrop")
 pdflyricsonly = builder.get_object("pdflyricsonly")
+pdfzoomspin = builder.get_object("PdfZoomSpin")
 
 #settings
 stylezoom = builder.get_object("chartzoom")
