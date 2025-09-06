@@ -33,6 +33,7 @@ import rtmidi
 import shlex
 import shutil
 import sys
+import tempfile
 import time
 from os.path import expanduser
 from rtmidi.midiutil import open_midiinput
@@ -312,6 +313,13 @@ class ChordPro():
         R_db is config, offset is transpose and onecolumn on True
         will produce just one column for printing, otherwise we want
         any one column to fit the widget height'''
+        # one column should be changed to columns:
+        #   0 == normal horizontal paging
+        #       use window height
+        #   1 == one column for vertical paging or printing
+        #       use USletter height
+        #   2 == two column for printing
+        #       if width X 2 > USletter width, force 1
         # top of file
         state = R_db['state']
         hfile = '<html>\n<head>\n<meta charset="utf-8">\n'
@@ -332,7 +340,7 @@ class ChordPro():
                 height = 0.0
             rh, dmy = ChordPro.rowheight(self, R_db, 'songline')
             if height > (winht - rh - 0):
-                # page full, always need one songine height left
+                # page full, always need one song line height left
                 hfile = f'{hfile}\n</td>'
                 pagetop = False
                 height = 0.0
@@ -375,7 +383,7 @@ class ChordPro():
                 ht, dmy = ChordPro.rowheight(self, R_db, 'blank')
                 hfile = f'{hfile}\n<div class="blank">&nbsp;</div>'
             elif '{' in line:
-                # TODO deal with other directives
+                # ToDo deal with other directives
                 # separate out lines that  start with "{" so that
                 # some other directive, Toss for now
                 continue
@@ -516,6 +524,7 @@ class SearchDialog(Gtk.Dialog):
             for sfile in sdb:
                 fnd = False
                 linetx = ""
+                # TODO search against author too
                 sn = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['name'])
                 #if srchtxt in sdb[sfile]['name']:
                 if srch in sn:
@@ -687,9 +696,10 @@ class UserConfig():
         global config
         global lists_db
         config_path = os.path.expanduser(f"~/.config/{appname}/")
-        # Make sure this directory exists
-        if not os.path.isdir(config_path):
-            os.makedirs(config_path)
+        pdfpath = f"{config_path}pdf/"
+        # Make sure this directory exists (makes config_path too)
+        if not os.path.isdir(pdfpath):
+            os.makedirs(pdfpath)
         c_file = f"{config_path}/{appname}.json"
         if os.path.isfile(c_file) and os.path.getsize(c_file) > 100:
             # config file exists, read it in
@@ -804,12 +814,15 @@ class UserConfig():
             pdfdb['lyrics'] = "False"
         if not 'zoom' in pdfdb:
             pdfdb['zoom'] = "100"
+        if not 'colour' in pdfdb:
+            pdfdb['colour'] = "False"
         #print(f"lyrics eval: {str(eval(pdfdb['lyrics']))}")
 
         pdffoldersel.set_current_folder(pdfdb['folder'])
         pdfcoldrop.set_active_id(pdfdb['columns'])
         pdflyricsonly.set_active(eval(pdfdb['lyrics']))
         pdfzoomspin.set_value(int(pdfdb['zoom']))
+        pdfcolourch.set_active(eval(pdfdb['colour']))
 
         stylezoom.set_sensitive(False)
         styletitlesz.set_sensitive(False)
@@ -1143,6 +1156,7 @@ class UserConfig():
             if state['key'] != "unknown":
                 read_data = f"{read_data}\n# key = {state['key']}\n\n"
                 mydirty = True
+        # FIXME find longest line length excluding st/(c) lines
         edit_text.set_text(read_data)
         enternotes.set_text(songnotes)
         adj = webkitbox.get_hadjustment()
@@ -1188,10 +1202,18 @@ class UserConfig():
 
     def save_webcss(self):
         global config
+        # FIXME need to create one for pdf use too.
         state = config['state']
         gen = config['general']
         web = config['webkit']
+        pdf = config['pdf']
         css_file = f"{state['config_path']}/chordpro.css"
+        pdf_file = f"{state['config_path']}/pdf/chordpro.css"
+        # Notes: pdf = US-Letter: 8.5in x 11.0in (816px x 1056px) (96DPI)
+        # Need to find longest line for current song and run this
+        #   not st or (c)
+        # line length is all lyric text plus pre and post chords plus buffer
+        # assume 10px average width for 16px font size times zoom
         sl = " {"
         ft = " {\n\tfont-size: "
         fte = "px;"
@@ -1199,12 +1221,15 @@ class UserConfig():
         lh = "\n\theight: "
         el = "\n\t}"
         zm = float(web['zoom'])/100
+        pzm = float(pdf['zoom'])/100
         fnt = 16 * zm
+        pfnt = 16 * pzm
         css_str = "\n.doc {\n\ttable-layout: fixed;\n\talign-content: flex-start;\n\t}"
         css_str = f"{css_str}\ntd{sl}\n\tpadding: 0px;{el}"
         css_str = f"{css_str}\ntable{sl}\n\tborder-spacing: 0px;{el}"
         css_str = f"{css_str}\n.pages{sl}{el}" # space holder for future use
         css_str = f"{css_str}\n.page{sl}\n\tvertical-align: top;"
+        pss_str = css_str
         pgsz = gen['pagesize']
         css_str = f"{css_str}\n\tmin-width: {pgsz}px;{el}"
         css_str = f"{css_str}\n.songline{sl}\n\theight: "
@@ -1905,7 +1930,7 @@ class Handler:
 
     def ListFromSelect(self):
         global config
-        # TODO Create list from selection
+        # ToDo Create list from selection
         # has to be added to GUI as well
         return
 
@@ -1958,7 +1983,7 @@ class Handler:
     def listsongselected(self, widget, row):
         global config
         global lists_db
-        # TODO deal with multiple songs selected
+        # ToDo deal with multiple songs selected
         #   - create new list
         #   - delete selected
         # selections can be shift 1st n last
@@ -2015,9 +2040,10 @@ class Handler:
         global srchfil
         state = config['state']
         # Add a song to the list
-        # TODO consider scanning songs again... maybe try anyway
+        # TODo consider scanning songs again... maybe try anyway
+        #   Seems ok with my list of songs but what happens with more?
         #   or just raw search
-        # TODO consider search against author too
+        #       Raw search bad as we scan db each letter typed in
         placeholder = "blank"
         our_db = lists_db[state['list']]['songs']
         this_idx = str(len(our_db) + 1)
@@ -2124,58 +2150,103 @@ class Handler:
         global config
         pdf = config['pdf']
         file_name = os.path.basename(config['state']['file']).split('.')[0]
-        template = f"{pdf['folder']}/{file_name}.pdf"
+        newName = f"{pdf['folder']}/{file_name}.pdf"
         #print(f"save song to pdf pressed, Template: {template}")
-        dial = Gtk.FileChooserDialog(
-            title="Please enter file name",
-            parent=window, action=Gtk.FileChooserAction.SAVE
-        )
-        dial.add_buttons(
-            Gtk.STOCK_CANCEL,
-            Gtk.ResponseType.CANCEL,
-            Gtk.STOCK_SAVE,
-            Gtk.ResponseType.OK,
-
-        )
-        dial.set_default_size(800, 400)
-        filter_pdf = Gtk.FileFilter()
-        filter_pdf.set_name("PDF files")
-        filter_pdf.add_pattern("*.pdf")
-        dial.add_filter(filter_pdf)
-        filter_any = Gtk.FileFilter()
-        filter_any.set_name("Any files")
-        filter_any.add_pattern("*")
-        dial.add_filter(filter_any)
-        dial.set_filename(template)
-        dial.set_current_name(f"{file_name}.pdf")
-        response = dial.run()
-        if response == Gtk.ResponseType.OK:
-            newName = dial.get_filename()
-        elif response == Gtk.ResponseType.CANCEL:
-            dial.destroy()
-            UserConfig.showStatus(self, "Save pdf cancelled")
-            return
-        dial.destroy()
         edtxst = edit_text.get_start_iter()
         edtxend = edit_text.get_end_iter()
         pageStr = edit_text.get_text(edtxst, edtxend, False)
         ofst = config['state']['offset']
         boxht = 1000 # not used - place holder
         newhtml = ChordPro.toHtml(self, config, pageStr, boxht, ofst, True)
+        #newhtml = ChordPro.toHtml(self, config, pageStr, boxht, ofst, False)
         urlpath = f"file://{config['state']['config_path']}/"
+        # FIXME after pdfcss is created
+        #urlpath = f"file://{config['state']['config_path']}/pdf/"
         HTML(string=newhtml, base_url=urlpath).write_pdf(newName)
 
     def pdfSaveListFiles(self, widget):
         global config
-        print("save set list to pdf files pressed")
+        global lists_db
+        pdf = config['pdf']
+        if config['state']['list'] == 0:
+            UserConfig.showStatus(self, "No set list loaded to convert")
+            return
+        ourlist = lists_db[config['state']['list']]['songs']
+        for x in ourlist:
+            file = ourlist[x]['file']
+            ofst = ourlist[x]['offset']
+            file_name = os.path.basename(file).split('.')[0]
+            fullname = f"{pdf['folder']}/{file_name}.pdf"
+            boxht = 1000 # not used - place holder will use later
+            if not os.path.isfile(file):
+                read_data = "{t: Missing File!}\n{st: Music Pager}\n"
+                read_data = f"{read_data}could not find\nFile: {file}"
+                UserConfig.showStatus(self, f"pdf missing {file}")
+            else:
+                with open(file, encoding="utf-8") as f:
+                    read_data = f.read()
+            newhtml = ChordPro.toHtml(self, config, read_data, boxht, ofst, True)
+            #newhtml = ChordPro.toHtml(self, config, pageStr, boxht, ofst, False)
+            urlpath = f"file://{config['state']['config_path']}/"
+            # FIXME after pdfcss is created
+            #urlpath = f"file://{config['state']['config_path']}/pdf/"
+            HTML(string=newhtml, base_url=urlpath).write_pdf(fullname)
+
 
     def pdfSaveListBook(self, widget):
         global config
-        print("save set list as pdf book pressed")
+        global lists_db
+        pdf = config['pdf']
+        if config['state']['list'] == 0:
+            UserConfig.showStatus(self, "No set list loaded to convert")
+            return
+        ourlist = lists_db[config['state']['list']]['songs']
+        listname = lists_db[config['state']['list']]['listname']
+        bookfile = f"{pdf['folder']}/{listname}.pdf"
+        doclist = []
+        for x in ourlist:
+            file = ourlist[x]['file']
+            ofst = ourlist[x]['offset']
+            file_name = os.path.basename(file).split('.')[0]
+            #fullname = f"{pdf['folder']}/{file_name}.pdf"
+            boxht = 1000 # not used - place holder will use later
+            if not os.path.isfile(file):
+                read_data = "{t: Missing File!}\n{st: Music Pager}\n"
+                read_data = f"{read_data}could not find\nFile: {file}"
+                UserConfig.showStatus(self, f"pdf missing {file}")
+            else:
+                with open(file, encoding="utf-8") as f:
+                    read_data = f.read()
+            newhtml = ChordPro.toHtml(self, config, read_data, boxht, ofst, True)
+            #newhtml = ChordPro.toHtml(self, config, pageStr, boxht, ofst, False)
+            urlpath = f"file://{config['state']['config_path']}/"
+            # FIXME after pdfcss is created
+            #urlpath = f"file://{config['state']['config_path']}/pdf/"
+            doclist.append(HTML(string=newhtml, base_url=urlpath).render())
+        all_pages = [p for doc in doclist for p in doc.pages]
+        doclist[0].copy(all_pages).write_pdf(bookfile)
 
     def pdfOpenReader(self, widget):
         global config
-        print("pressed open pdf reader")
+        pdf = config['pdf']
+        file_name = os.path.basename(config['state']['file']).split('.')[0]
+        template = f"{pdf['folder']}/{file_name}.pdf"
+        edtxst = edit_text.get_start_iter()
+        edtxend = edit_text.get_end_iter()
+        pageStr = edit_text.get_text(edtxst, edtxend, False)
+        ofst = config['state']['offset']
+        boxht = 1000 # not used - place holder
+        newhtml = ChordPro.toHtml(self, config, pageStr, boxht, ofst, True)
+        #newhtml = ChordPro.toHtml(self, config, pageStr, boxht, ofst, False)
+        urlpath = f"file://{config['state']['config_path']}/"
+        # FIXME after pdfcss is created
+        #urlpath = f"file://{config['state']['config_path']}/pdf/"
+        with tempfile.NamedTemporaryFile(delete_on_close=False) as fp:
+            fp.write(HTML(string=newhtml, base_url=urlpath).write_pdf(None))
+            fp.close()
+            cmd = f"xdg-open {fp.name}"
+            os.popen(cmd)
+            time.sleep(1)
 
     def PDFfolderset(self, widget):
         global config
@@ -2202,7 +2273,14 @@ class Handler:
         if config['pdf']['zoom'] == str(widget.get_value()):
             return
         config['pdf']['zoom'] = str(int(widget.get_value()))
-        print(f"pdf zoom set to: {str(widget.get_value())}")
+
+    def pdfColourSet(self, widget):
+        global config
+        if config['pdf']['colour'] == str(widget.get_active()):
+            return
+        config['pdf']['colour'] = str(widget.get_active())
+        UserConfig.Save(self)
+
 
     # Settings
     def stylechanged(self, widget):
@@ -2434,6 +2512,7 @@ pdffoldersel = builder.get_object("pdfFolderSel")
 pdfcoldrop = builder.get_object("pdfColDrop")
 pdflyricsonly = builder.get_object("pdflyricsonly")
 pdfzoomspin = builder.get_object("PdfZoomSpin")
+pdfcolourch = builder.get_object("pdfColourCh")
 
 #settings
 stylezoom = builder.get_object("chartzoom")
