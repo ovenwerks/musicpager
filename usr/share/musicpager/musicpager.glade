@@ -909,7 +909,7 @@
                                     <property name="active">0</property>
                                     <items>
                                       <item id="1" translatable="yes">Single</item>
-                                      <item id="2" translatable="yes">Double</item>
+                                      <item id="2" translatable="yes">Auto Double</item>
                                     </items>
                                     <signal name="changed" handler="pdfcolumns" swapped="no"/>
                                   </object>
