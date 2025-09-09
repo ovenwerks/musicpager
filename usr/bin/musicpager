@@ -208,8 +208,10 @@ class ChordPro():
                     # line begins with [ so empty sub skip
                     continue
                 pre, bra, tail = sub.partition("]")
-                if bra == "":
+                if bra == "" or tail == "":
                     #whole thing should be text, no chords
+                    # or the chord is at the end of the line and
+                    # should be counted
                     llen = llen + len(pre)
                 else:
                     llen = llen + len(tail)
@@ -340,13 +342,13 @@ class ChordPro():
         nt = pool[nn]
         return f"{nt}{ext}"
 
-    def toHtml(self, strng, pageht, offset, columns, zoom):
+    def toHtml(self, strng, winht, offset, columns, zoom):
         ''' take strng and return converted to html,
         R_db is config, offset is transpose and onecolumn on True
         will produce just one column for printing, otherwise we want
         any one column to fit the widget height'''
         global config
-        # one column should be changed to columns:
+        # columns:
         #   0 == normal horizontal paging
         #       use window height
         #   1 == one column for vertical paging or printing
@@ -354,36 +356,46 @@ class ChordPro():
         #   2 == two column for printing
         #       if width X 2 > USletter width, force 1
         #       416 is half wide in px
-        # top of file
         state = config['state']
-        wide = ChordPro.getlongline(self, strng) * zoom * 7
-        if columns == 2 and wide > 400:
-             # text is too wide single column it
+        rawwide = ChordPro.getlongline(self, strng)
+        wide = rawwide * zoom * 7
+        print(f"tohtml height: {str(winht)} wide: {str(wide)}")
+        if int(columns) == 2 and wide > 400:
+             # text is too wide single column it (400 is top with margin 0)
+             print(f"columns are too wide for two.")
              columns = 1
+        # top of file
         hfile = '<html>\n<head>\n<meta charset="utf-8">\n'
         hfile = f'{hfile}<link rel="stylesheet" href="chordpro.css">'
         hfile = f"{hfile}\n</head>\n<body>"
-        # FIXME deal properly with 1 or 2 columns
-        if int(columns) < 1:
+        if int(columns) != 1:
             hfile = f'{hfile}\n<table class="doc"><tr class="pages">'
-        winht = int(state['boxheight'])
+        #winht = int(state['boxheight'])
         key = state['key']
         height = 0.0
-        state['pages'] = '1'
+        rpages = 1
         pagetop = False
         titl = True
         buf = io.StringIO(strng)
         for line in buf:
             testl = line.lower()
-            if columns == 1:
-                height = 0.0
             rh, dmy = ChordPro.rowheight(self, 'songline', zoom)
             if height > (winht - rh - 0):
                 # page full, always need one song line height left
+                if int(columns) == 1:
+                    rpages = 1
+                    hfile = f'{hfile}<div class="page-break"></div>'
+                    height = 0.0
+                    continue
                 hfile = f'{hfile}\n</td>'
                 pagetop = False
                 height = 0.0
-                state['pages'] = str(int(state['pages']) + 1)
+                rpages = rpages + 1
+                if int(columns) == 2 and rpages == 3:
+                    rpages = 1
+                    hfile = f'{hfile}\n</table>'
+                    hfile = f'{hfile}<div class="page-break"></div>'
+                    hfile = f'{hfile}\n<table class="doc"><tr class="pages">'
             if not pagetop:
                 hfile = f'{hfile}\n<td class="page">'
                 pagetop = True
@@ -399,8 +411,8 @@ class ChordPro():
                 end = line.find("}")
                 txt = line[st:end].strip()
                 ht, dmy = ChordPro.rowheight(self, 'subtitle', zoom)
-                if len(txt) > 75:
-                    splt = txt.find(' ', 60)
+                if len(txt) > rawwide:
+                    splt = txt.find(' ', rawwide - 15)
                     txt1 = txt[0:splt]
                     txt = txt[splt:]
                     ht = ht + ht
@@ -430,7 +442,8 @@ class ChordPro():
                 # throw hidden lines away too
                 continue
             elif '{copy' in testl or '©' in testl or '(c)' in testl:
-                if height > (winht / 2):
+                if columns == 0 and height > (winht / 2):
+                    # FIXME (c) cutoff height
                     # because these can be quite long, start new page
                     #   if we are more than half way down
                     hfile = f'{hfile}\n</td>'
@@ -444,8 +457,8 @@ class ChordPro():
                     txt = line[st:end]
                 hite, dmy = ChordPro.rowheight(self, 'subtitle', zoom)
                 ht = 0
-                while len(txt) > 75:
-                    splt = txt.find(' ', 60)
+                while len(txt) > rawwide:
+                    splt = txt.find(' ', rawwide - 15)
                     txt1 = txt[0:splt]
                     txt = txt[splt:]
                     ht = hite + ht
@@ -459,6 +472,8 @@ class ChordPro():
                 cline = '\n<tr class="chords">'
                 lline = '\n<tr class="lyrics">'
                 ourline = line.strip()
+                if columns > 0 and eval(config['pdf']['lyrics']):
+                    ourline = UserConfig.deChordLine(ourline)
                 if ourline.find("[") == -1:
                     # if no chords, height = lyrics
                     ht, dmy = ChordPro.rowheight(self, 'lyrics', zoom)
@@ -489,6 +504,7 @@ class ChordPro():
                 hfile = f'{hfile}{cline}{lline}\n</table>'
             height = height + ht
         hfile = f"{hfile}</tr></table></body></html>\n"
+        state['pages'] = rpages
         return hfile
 
 
@@ -851,6 +867,10 @@ class UserConfig():
             pdfdb['zoom'] = "100"
         if not 'colour' in pdfdb:
             pdfdb['colour'] = "False"
+        # FIXME pdf height
+        #boxht = 1056 # 1056 is supposed to be std :P
+        # 1196 current working number
+        pdfdb['height'] = 1196
         #print(f"lyrics eval: {str(eval(pdfdb['lyrics']))}")
 
         pdffoldersel.set_current_folder(pdfdb['folder'])
@@ -1245,6 +1265,8 @@ class UserConfig():
         css_file = f"{state['config_path']}/chordpro.css"
         pdf_file = f"{state['config_path']}/pdf/chordpro.css"
         # Notes: pdf = US-Letter: 8.5in x 11.0in (816px x 1056px) (96DPI)
+        #           The 816 is pretty close
+        #           1065 is too small, second page starts on bottom of page 1
         sl = " {"
         ft = " {\n\tfont-size: "
         fte = "px;"
@@ -1255,18 +1277,25 @@ class UserConfig():
         pzm = float(pdf['zoom'])/100
         fnt = 16 * zm
         pfnt = 16 * pzm
-        c_str = "\n.doc {\n\ttable-layout: fixed;\n\talign-content: flex-start;\n\t}"
-        c_str = f"{c_str}\ntd{sl}\n\tpadding: 0px;{el}"
-        c_str = f"{c_str}\ntable{sl}\n\tborder-spacing: 0px;{el}"
-        c_str = f"{c_str}\n.pages{sl}{el}" # space holder for future use
-        c_str = f"{c_str}\n.page{sl}\n\tvertical-align: top;"
-        p_str = c_str
-        # next two lines, set 10 to optimum char width
+        pst1 = "\n@media print {\n\t.page, .page-break"
+        pst2 = " { break-after: page; }\n}"
+        str1 = "\n@page {\n\tmargin:6mm\n}"
+        str2 = "\n.doc {\n\talign-content: flex-start;\n\t}"
+        c_str = f"{str1}{str2}\ntd{sl}\n\tpadding: 0px;{el}"
+        c_str = f"{c_str}\ntable{sl}\n\tborder-spacing: 0px;"
+        c_str = f"{c_str}{el}"
+        # next line started with 816, tohtml uses 800
+        p_str = f"{pst1}{pst2}{c_str}\n\tmax_width: 808px;{el}"
+        t_str = f"\n.pages{sl}{el}\n.page{sl}\n\tvertical-align: top;"
+        c_str = f"{c_str}{t_str}"
+        p_str = f"{p_str}{t_str}"
+        # next two lines, set 7 to optimum char width
         # also in loadsong
         pgsz = pagewide * zm * 7
         ppgsz = pagewide * pzm * 7
-        c_str = f"{c_str}\n\tmin-width: {pgsz}px;{el}\n.songline{sl}\n\theight: "
-        p_str = f"{p_str}\n\tmin-width: {ppgsz}px;{el}\n.songline{sl}\n\theight: "
+        exra = f"{el}\n.songline{sl}\n\theight: "
+        c_str = f"{c_str}\n\tmin-width: {pgsz}px;\n\tmax-width: {pgsz}{exra}"
+        p_str = f"{p_str}\n\tmin-width: {ppgsz}px;\n\tmax-width: {ppgsz}{exra}"
 
         h, f = ChordPro.rowheight(self, "songline", zm)
         c_str = f"{c_str}{f}px;{el}"
@@ -1786,11 +1815,10 @@ class Handler:
         pageStr = edit_text.get_text(edtxst, edtxend, False)
         ofst = state['offset']
         boxht = int(state['boxheight'])
-        wide = state['wide']
+        wide = gen['pagesize']
         newhtml = ChordPro.toHtml(self, pageStr, boxht, ofst, 0, zm)
         bwidth = (int(state['pages']) + 1) * int(config['general']['pagesize'])
         webbigBox.set_size_request (bwidth, int(state['boxheight']))
-        tstsz = webbigBox.get_size_request()
         # clear cache so that new css will be read
         ctxt = wview.get_context()
         ctxt.clear_cache()
@@ -1847,6 +1875,7 @@ class Handler:
         elif widget.get_active_id() == "search":
             gen = config['general']
             widget.set_active_id("name")
+            srchfil = 'none'
             dialog = SearchDialog(window)
             response = dialog.run()
             if response == Gtk.ResponseType.CANCEL:
@@ -2226,7 +2255,7 @@ class Handler:
         edtxend = edit_text.get_end_iter()
         pageStr = edit_text.get_text(edtxst, edtxend, False)
         ofst = config['state']['offset']
-        boxht = 1056 # one page
+        boxht = int(pdf['height'])
         cols = pdf['columns']
         newhtml = ChordPro.toHtml(self, pageStr, boxht, ofst, cols, zm)
         urlpath = f"file://{config['state']['config_path']}/pdf/"
@@ -2246,7 +2275,7 @@ class Handler:
             ofst = ourlist[x]['offset']
             file_name = os.path.basename(file).split('.')[0]
             fullname = f"{pdf['folder']}/{file_name}.pdf"
-            boxht = 1056 # page height
+            boxht = int(pdf['height'])
             if not os.path.isfile(file):
                 read_data = "{t: Missing File!}\n{st: Music Pager}\n"
                 read_data = f"{read_data}could not find\nFile: {file}"
@@ -2276,7 +2305,7 @@ class Handler:
             file = ourlist[x]['file']
             ofst = ourlist[x]['offset']
             file_name = os.path.basename(file).split('.')[0]
-            boxht = 1056 # page height
+            boxht = int(pdf['height'])
             if not os.path.isfile(file):
                 read_data = "{t: Missing File!}\n{st: Music Pager}\n"
                 read_data = f"{read_data}could not find\nFile: {file}"
@@ -2302,7 +2331,8 @@ class Handler:
         pageStr = edit_text.get_text(edtxst, edtxend, False)
         longest = ChordPro.getlongline(self, pageStr)
         ofst = config['state']['offset']
-        boxht = 1056 # Page height
+        #boxht = 1056 # Page height try X1228X
+        boxht = int(pdf['height'])
         cols = pdf['columns']
         newhtml = ChordPro.toHtml(self, pageStr, boxht, ofst, cols, zm)
         urlpath = f"file://{config['state']['config_path']}/pdf/"

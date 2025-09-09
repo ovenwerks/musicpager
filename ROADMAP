@@ -5,6 +5,21 @@
  things)
 
 Features we want:
+ - print to PDF
+    - probably with html to pdf (started we can load a pdf to a viewer
+        which can then print)
+    - so add many options to html converter:
+        - Lyrics only
+        - print/show bass version
+
+ - Import html text
+    - Same problems as pdfs except:
+        if tabled it's easy, two ways:
+            dismantle table
+            use just text grab
+        if mono spaced quite easy mono should be detectable
+        otherwise a conversion to mono is needed. Perhaps a button
+            for this.
 
  - Improve editor
      - Edit in current key but save in default key
@@ -24,21 +39,6 @@ Features we want:
         place in song before going back. Or both but this may be easier
         to implement first and would sure be nice.
 
- - Import html text
-    - Same problems as pdfs except:
-        if tabled it's easy
-        if mono spaced quite easy mono should be detectable
-        otherwise a conversion to mono is needed. Perhaps a button
-            for this.
-
- - print to PDF
-    - probably with html to pdf
-    - so add many options to html converter:
-        - Lyrics only
-        - Long format (all choruses in line)
-        - Short format
-        - print chord boxes or not
-        - print/show bass version
  - Import PDFs
     - This is a nightmare as some pdfs are images while others have
         raw text. Each type of pdf will need to be detected:

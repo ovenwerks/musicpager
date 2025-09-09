@@ -3,6 +3,8 @@ musicpager version 1.2.0
  [ Len Ovens ]
 - Changed settings page to a notebook format
 - Added PDF creation
+- Allow PDFs with two columns
+- Allow Lyrics only PDFs
 
 musicpager version 1.1.1
 
