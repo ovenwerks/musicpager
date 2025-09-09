@@ -386,16 +386,16 @@ class ChordPro():
                     rpages = 1
                     hfile = f'{hfile}<div class="page-break"></div>'
                     height = 0.0
-                    continue
-                hfile = f'{hfile}\n</td>'
-                pagetop = False
-                height = 0.0
-                rpages = rpages + 1
-                if int(columns) == 2 and rpages == 3:
-                    rpages = 1
-                    hfile = f'{hfile}\n</table>'
-                    hfile = f'{hfile}<div class="page-break"></div>'
-                    hfile = f'{hfile}\n<table class="doc"><tr class="pages">'
+                else:
+                    hfile = f'{hfile}\n</td>'
+                    pagetop = False
+                    height = 0.0
+                    rpages = rpages + 1
+                    if int(columns) == 2 and rpages == 3:
+                        rpages = 1
+                        hfile = f'{hfile}\n</table>'
+                        hfile = f'{hfile}<div class="page-break"></div>'
+                        hfile = f'{hfile}\n<table class="doc"><tr class="pages">'
             if not pagetop:
                 hfile = f'{hfile}\n<td class="page">'
                 pagetop = True
@@ -442,20 +442,28 @@ class ChordPro():
                 # throw hidden lines away too
                 continue
             elif '{copy' in testl or '©' in testl or '(c)' in testl:
-                if columns == 0 and height > (winht / 2):
-                    # FIXME (c) cutoff height
-                    # because these can be quite long, start new page
-                    #   if we are more than half way down
-                    hfile = f'{hfile}\n</td>'
-                    height = 0.0
-                    state['pages'] = str(int(state['pages']) + 1)
-                    hfile = f'{hfile}\n<td class="page">'
+                hite, dmy = ChordPro.rowheight(self, 'subtitle', zoom)
+                if height > (winht - (1 + hite * (len(testl)/rawwide))):
+                    if int(columns) == 1:
+                        rpages = 1
+                        hfile = f'{hfile}<div class="page-break"></div>'
+                        height = 0.0
+                    else:
+                        hfile = f'{hfile}\n</td>'
+                        pagetop = False
+                        height = 0.0
+                        rpages = rpages + 1
+                        if int(columns) == 2 and rpages == 3:
+                            rpages = 1
+                            hfile = f'{hfile}\n</table>'
+                            hfile = f'{hfile}<div class="page-break"></div>'
+                            hfile = f'{hfile}\n<table class="doc"><tr class="pages">'
+                        hfile = f'{hfile}\n<td class="page">'
                 txt = line
                 if '{copy' in testl:
                     st = line.find(":") + 1
                     end = line.find("}")
                     txt = line[st:end]
-                hite, dmy = ChordPro.rowheight(self, 'subtitle', zoom)
                 ht = 0
                 while len(txt) > rawwide:
                     splt = txt.find(' ', rawwide - 15)
@@ -472,11 +480,12 @@ class ChordPro():
                 cline = '\n<tr class="chords">'
                 lline = '\n<tr class="lyrics">'
                 ourline = line.strip()
-                if columns > 0 and eval(config['pdf']['lyrics']):
+                if int(columns) > 0 and eval(config['pdf']['lyrics']):
                     ourline = UserConfig.deChordLine(ourline)
                 if ourline.find("[") == -1:
                     # if no chords, height = lyrics
                     ht, dmy = ChordPro.rowheight(self, 'lyrics', zoom)
+                    ht = ht * 1.5
                 for sub in ourline.split('['):
                     # each sub has either one ] or none
                     if sub == "":
@@ -582,6 +591,9 @@ class SearchDialog(Gtk.Dialog):
                 sn = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['name'])
                 if srch in sn:
                     fnd = True
+                sa = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['author'])
+                if srch in sa:
+                    fnd = True
                 sv = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['verse'])
                 sc = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['chorus'])
                 si = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['number'])
@@ -614,8 +626,9 @@ class SearchDialog(Gtk.Dialog):
                 mysng = self.found[idx]
                 desc = f"{os.path.basename(mysng['file'])}\n"
                 desc = f"{desc}{mysng['name']} - {mysng['author']}"
-                desc = f"{desc} - {mysng['number']}\n"
-                desc = f"{desc}{mysng['line']}"
+                if mysng['number'] !=  "unknown":
+                    desc = f"{desc} - {mysng['number']}"
+                desc = f"{desc}\n{mysng['line']}"
                 label = Gtk.Label.new(desc)
                 label.set_justify(Gtk.Justification.LEFT)
                 row = Gtk.ListBoxRow()
@@ -870,7 +883,9 @@ class UserConfig():
         # FIXME pdf height
         #boxht = 1056 # 1056 is supposed to be std :P
         # 1196 current working number
-        pdfdb['height'] = 1196
+        # 1160 settled on through experimentation Works good
+        # with 100%-ish but might need to tweak for other values
+        pdfdb['height'] = 1160
         #print(f"lyrics eval: {str(eval(pdfdb['lyrics']))}")
 
         pdffoldersel.set_current_folder(pdfdb['folder'])
