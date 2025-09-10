@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Music Pager - Pedal and Hotkey Settings Page</title>
+<meta name="generator" content="Bluefish 2.2.15" >
+<meta name="author" content="len" >
+<meta name="date" content="2025-09-10T10:04:54-0700" >
+<meta name="copyright" content="">
+<meta name="keywords" content="">
+<meta name="description" content="">
+<meta name="ROBOTS" content="NOINDEX, NOFOLLOW">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8">
+<meta http-equiv="content-style-type" content="text/css">
+<meta http-equiv="expires" content="0">
+</head>
+<body style="font-size: 28px; ">
+
+<h1>The Pedal and Hotkey Settings Page</h1>
+<p><a href="Fonts.html">Previous Page</a> 
+|| <a href="index.html">Main Page</a>
+|| <a href="search.html">Next Page</a></p>
+
+<p>The Hotkeys and MIDI control section:</p>
+<img src="img/Navigation_settings.jpg" width="550" height="424" alt="">
+<p>The default hot key setting came from my personal USB pedal which has
+	three pedals: a, b and c. Then from there 6 Has ^ above it and v is
+	opposite then , has &lt; Depending on the pedal, arrow keys would be
+	better. In any case click on the function you wish to change and when
+	the dialog opens press the key or pedal you wish to attach to that function
+	to set it.</p>
+<img src="img/pedal_dialog.jpg" width="328" height="136" alt="">	
+<p>Shifted or modified keys will not work. (who wants to deal with hitting two
+	keys in the middle of a song?) Arrow keys can get selected but do not seem to
+	work (page up and down do). Yes, this is a bug, but not priority at this time.</p>
+<ul>
+<li>
+<p>The Auto song change checkbox is for use with a two button pedal. At the end
+	of the song, an extra page forward will act as a next song and at the beginning
+	of the song, the previous page button will go to previous song. Beware this
+	can be confusing but if a two button unit is all you have, it will work.</p>
+</li>
+<li>
+	<p>The midi section is much like the hot key section, select the function and
+	press the pedal to send the MIDI event to set. Pressure, pitch bend, and
+	keyon with velocity of 0 are filtered out. So keyon, key off, program, CC,
+	etc. all work. I found the M-Vave Chocolate Plus is small
+	enough to pack while giving useful midi codes out of the box. It is also less
+	expensive than many USB pedals.</p>
+</li>
+<li>
+	<p>First use the MIDI backend to choose between ALSA and Jack. Most modern
+	Linux systems with PipeWire have a Jack graph runnnig all the time and will
+	show BlueTooth devices that are paired. Then use the device drop down to
+	connect to the MIDI device you are using.</p>
+</li>
+</ul>
+<p><a href="Fonts.html">Previous Page</a> 
+|| <a href="index.html">Main Page</a>
+|| <a href="search.html">Next Page</a></p>
+
+</body>
+</html>

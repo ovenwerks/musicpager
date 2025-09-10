@@ -4,7 +4,7 @@
 <title>Music Pager - Installation</title>
 <meta name="generator" content="Bluefish 2.2.15" >
 <meta name="author" content="len" >
-<meta name="date" content="2025-08-23T16:53:08-0700" >
+<meta name="date" content="2025-09-09T21:11:29-0700" >
 <meta name="copyright" content="">
 <meta name="keywords" content="">
 <meta name="description" content="">
@@ -18,13 +18,30 @@
 <h1>Installing Music Pager</h1>
 <p><a href="index.html">Main Page</a> || <a href="top_bar.html">Next Page</a></p>
 <ul>
-<li>Download Music pager from <a href="https://github.com/ovenwerks/musicpager/releases">Github</a></li>
+<li>Download Music pager from
+<a href="https://github.com/ovenwerks/musicpager/releases">Github</a></li>
 <li>Unzip or untar the archive into an empty directory</li>
-<li>Open a terminal in that directory and enter <code>sudo make install</code>, give your password
+<li>Open a terminal in that directory and enter
+ <code>sudo make install</code>, give your password
 when asked</li>
-<li>musicpager should now show up in your menu (some desktops expect a search key) or can be
+<li>There are some other packages that may not already be installed
+on your system that you will need to install. I required:
+		<ul>
+		<li>gir1.2-webkit2</li>
+		<li>weasyprint</li>
+		<li>python3-rtmidi</li>
+		</ul>
+These are all python3 libraries that should be available from
+the same place you update your software from. If not
+<a href="https://packaging.python.org/en/latest/tutorials/installing-packages/">
+python.org</a> shows how to use pip to download them directly
+from the python repositories
+</li>
+<li>musicpager should now show up in your menu
+(some desktops expect a search key) or can be
 typed in from a terminal</li>
-<li>Go to the settings page first and set your base directory and any other settings you wish.</li>
+<li>Go to the settings page first and set your base directory
+and any other settings you wish.</li>
 <li>Enjoy.</li>
 
 </ul>

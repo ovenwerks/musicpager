@@ -348,29 +348,17 @@ class ChordPro():
         will produce just one column for printing, otherwise we want
         any one column to fit the widget height'''
         global config
-        # columns:
-        #   0 == normal horizontal paging
-        #       use window height
-        #   1 == one column for vertical paging or printing
-        #       use USletter height
-        #   2 == two column for printing
-        #       if width X 2 > USletter width, force 1
-        #       416 is half wide in px
         state = config['state']
         rawwide = ChordPro.getlongline(self, strng)
         wide = rawwide * zoom * 7
-        print(f"tohtml height: {str(winht)} wide: {str(wide)}")
         if int(columns) == 2 and wide > 400:
-             # text is too wide single column it (400 is top with margin 0)
              print(f"columns are too wide for two.")
              columns = 1
-        # top of file
         hfile = '<html>\n<head>\n<meta charset="utf-8">\n'
         hfile = f'{hfile}<link rel="stylesheet" href="chordpro.css">'
         hfile = f"{hfile}\n</head>\n<body>"
         if int(columns) != 1:
             hfile = f'{hfile}\n<table class="doc"><tr class="pages">'
-        #winht = int(state['boxheight'])
         key = state['key']
         height = 0.0
         rpages = 1
@@ -536,7 +524,6 @@ class NewSetDialog(Gtk.Dialog):
         self.show_all()
 
     def submit(self, entry):
-        # Send the OK response to the dialog
         self.response(Gtk.ResponseType.OK)
 
 
@@ -587,7 +574,6 @@ class SearchDialog(Gtk.Dialog):
             for sfile in sdb:
                 fnd = False
                 linetx = ""
-                # TODO search against author too
                 sn = re.sub(r'[^a-zA-Z0-9]', '', sdb[sfile]['name'])
                 if srch in sn:
                     fnd = True
@@ -825,7 +811,7 @@ class UserConfig():
         if not 'folderdepth' in gendb:
             gendb['folderdepth'] = "1"
         if not 'pagesize' in gendb:
-            gendb['pagesize'] = "816" #width px
+            gendb['pagesize'] = "816" #width px gets changed on file load
         if not 'autosong' in gendb:
             gendb['autosong'] = 'False'
 
@@ -882,7 +868,7 @@ class UserConfig():
             pdfdb['colour'] = "False"
         # FIXME pdf height
         #boxht = 1056 # 1056 is supposed to be std :P
-        # 1196 current working number
+        # 1196 current working number sometimes goes next page
         # 1160 settled on through experimentation Works good
         # with 100%-ish but might need to tweak for other values
         pdfdb['height'] = 1160
@@ -967,6 +953,7 @@ class UserConfig():
         self.sethotkeys()
         self.midiopen()
         self.Save()
+        self.saveSongs()
 
     def setselectfix(self):
         global config
@@ -1281,7 +1268,7 @@ class UserConfig():
         pdf_file = f"{state['config_path']}/pdf/chordpro.css"
         # Notes: pdf = US-Letter: 8.5in x 11.0in (816px x 1056px) (96DPI)
         #           The 816 is pretty close
-        #           1065 is too small, second page starts on bottom of page 1
+        #           1065 is too small, See init
         sl = " {"
         ft = " {\n\tfont-size: "
         fte = "px;"
@@ -2346,7 +2333,6 @@ class Handler:
         pageStr = edit_text.get_text(edtxst, edtxend, False)
         longest = ChordPro.getlongline(self, pageStr)
         ofst = config['state']['offset']
-        #boxht = 1056 # Page height try X1228X
         boxht = int(pdf['height'])
         cols = pdf['columns']
         newhtml = ChordPro.toHtml(self, pageStr, boxht, ofst, cols, zm)
@@ -2384,7 +2370,7 @@ class Handler:
         if config['pdf']['zoom'] == str(widget.get_value()):
             return
         config['pdf']['zoom'] = str(int(widget.get_value()))
-        UserConfig.save_webcss(self)
+        #UserConfig.save_webcss(self) # everything that needs this runs it
         UserConfig.Save(self)
 
     def pdfColourSet(self, widget):

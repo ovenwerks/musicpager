@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Music Pager - Settings Page</title>
+<title>Music Pager - PDF utilities Page</title>
 <meta name="generator" content="Bluefish 2.2.15" >
 <meta name="author" content="len" >
-<meta name="date" content="2025-08-23T16:53:57-0700" >
+<meta name="date" content="2025-09-10T09:34:38-0700" >
 <meta name="copyright" content="">
 <meta name="keywords" content="">
 <meta name="description" content="">
@@ -16,59 +16,52 @@
 </head>
 <body style="font-size: 28px; ">
 
-<h1>The settings Page</h1>
-<p><a href="Set_List_Page.html">Previous Page</a> || <a href="index.html">Main Page</a></p>
+<h1>The PDF Utilities Page</h1>
+<p><a href="Set_List_Page.html">Previous Page</a>
+ || <a href="index.html">Main Page</a>
+ || <a href="Fonts.html">Next Page</a></p>
 
-<p>where all the settings can be changed.</p>
-<img src="img/Settings_Screen.jpg" width="1024" height="441" alt="">
-<p>There are three sections on this page:</p>
+<p>There are four settings pages. The first is for creating PDF files of songs.</p>
+<img src="img/Settings_Screen.jpg" width="1000" height="679" alt="">
+
+<p>While using Music Pager directly on stage or at practice, there are
+	times when having a PDF file which can be printed and handed to band
+	mates or to be used where a computer may not make sense.</p>
+<p>So Music pager allows the creation of PDF files. Music Pager supports:</p>
 <ul>
-<li>
-	<p>The font size and colour section:</p>
-	<img src="img/Font_settings.jpg" width="392" height="200" alt="">
-	<p>Each of the main parts of the chart page can have their font size and colour set.</p>
-	<p>The chart zoom sets the over all size. The fonts start as 16 pixels and are multiplied
-		by the chart zoom and the individual font size to determine the final size. It seems
-		it is best to set the system font size for over all best readability of all your applications
-		and then these can be adjusted for the screen resolution so that the chart is easy to read.</p>
-		<p>The types of text can have their colours set for easy readability. It seems quite
-		common to set the chords to red.</p>
-</li>
-<li>
-	<p>The hot keys and MIDI control section:</p>
-	<img src="img/Navigation_settings.jpg" width="387" height="229" alt="">
-	<p>The default hot key setting comes from my personal USB pedal which has three pedals:
-	a, b and c. Then from there 6 Has ^ above it and v is opposite then , has &lt; Depending
-	on the pedal, arrow keys would be better. In any case click on the function you wish to
-	change and when the dialog opens press the key or pedal you wish to attach to that function
-	to set it. Shifted or modified keys will not work. (who wants to deal with hitting two
-	keys in the middle of a song?)</p>
-	<p>The Auto song change checkbox is for use with a two button pedal. At the end of the song,
-	an extra page forward will act as a next song and at the beginning of the song, the previous
-	page button will go to previous song. Beware this can be confusing but if a two button unit
-	is all you have, it will work.</p>
-	<p>The midi section is much like the hot key section, select the function and press the pedal
-	to send the MIDI event to set. Pressure, pitch bend, and keyon with velocity of 0 are filtered
-	out. So keyon, key off, program, CC, etc. all work. I found the M-Vave chocolate plus is small
-	enough to pack while giving useful midi codes out of the box.</p>
-	<p>First use the MIDI backend to choose between ALSA and Jack. Most modern Linux systems with
-	PipeWire have a Jack graph runnnig all the time and will show BlueTooth devices that are 
-	paired. Then use the device drop down to connect to the MIDI device you are using.</p>
-</li>
-<li>
-	<p>The search settings:</p>
-	<img src="img/search_settings.jpg" width="243" height="110" alt="">
-	<p>The Base folder is where the song files are kept. It may be typed in or click on the # button
-	to open a file dialog and select that way.</p>
-	<p>The subfolder depth determines how far down into sub folders will be checked. A single
-		file can be opened anywhere but searches will happen in the base folder and sub folders.
-		This is useful for dividing the songs by first letter for example to help keep one's
-		sanity.</p>
-	<p>The refresh button builds a database from all the songs that can be found so that
-		searching is faster. Press this each time you add new song files.</p>
-</li>
+	<li>Creating a PDF file of the current song.</li>
+	<li>Creating a group of PDF files of the current set list.</li>
+	<li>Creating a single PDF file or "book" with all songs from the
+		current set list in it. This may be a more convenient way of
+		distributing a group of songs.</li>
+	<li>Creating a temporary PDF file and opening the system PDF viewer
+		with that file. Most PDF viewers also allow printing of the document.
+		so this could be thought of a print preview button.</li>
 </ul>
-<p><a href="Set_List_Page.html">Previous Page</a> || <a href="index.html">Main Page</a></p>
+
+<p>Often times, the settings that work well with viewing do not work well
+	with printing. So The PDFs have there own settings.</p>
+<ul>
+<li>Columns: Can be either single where the PDF has one column all the
+	way down or Auto Double which tries to do everything in two columns
+	to save pages but will drop to single if the song's lines are too
+	long to fit.</li>
+<li>PDF Save Folder: This will open a folder dialog that allows selecting
+	the folder where pdf files will be stored. The files will be stored with
+	the original filename and with the extension changed to pdf.</li>
+<li>Lyrics Only: This is for those who don't need the chords such as
+	singers and will allow fitting a song on less pages.</li>
+<li>Colour Fonts: By default PDFs use all black fonts to work with the
+	average printer. This allows the use of the same colour fonts as used
+	in the chord display for printers that support that.</li>
+<li>PDF Zoom: The overall zoom for the chart display is often not the
+	best font size for PDF use. Changing the zoom may allow a song that
+	is too wide for two columns to fit.</li>
+</ul>
+
+<p><a href="Set_List_Page.html">Previous Page</a>
+ || <a href="index.html">Main Page</a>
+ || <a href="Fonts.html">Next Page</a></p>
 
 </body>
 </html>
