@@ -472,6 +472,7 @@ class ChordPro():
                     ourline = UserConfig.deChordLine(ourline)
                 if ourline.find("[") == -1:
                     # if no chords, height = lyrics
+                    # FIXME also detect no lyrics
                     ht, dmy = ChordPro.rowheight(self, 'lyrics', zoom)
                     ht = ht * 1.5
                 for sub in ourline.split('['):
@@ -822,11 +823,11 @@ class UserConfig():
         if not 'keydown' in hotdb:
             hotdb['keydown'] = "v"
         if not 'pagenext' in hotdb:
-            hotdb['pagenext'] = "c"
+            hotdb['pagenext'] = "Page_Down"
         if not 'pageback' in hotdb:
-            hotdb['pageback'] = "a"
+            hotdb['pageback'] = "Page_Up"
         if not 'songnext' in hotdb:
-            hotdb['songnext'] = "b"
+            hotdb['songnext'] = "period"
         if not 'songback' in hotdb:
             # , looks like <
             hotdb['songback'] = "comma"
@@ -1174,23 +1175,25 @@ class UserConfig():
         zm = float(config['webkit']['zoom'])/100
         config['general']['pagesize'] = lngln * 7 * zm
         UserConfig.save_webcss(self, lngln)
+        state['offset'] = "0"
+        songnotes = ""
+        if read_data.lower().find("# trans") != -1:
+            os1 = read_data[read_data.lower().find("# transpose = ") + 14:]
+            state['offset'] = os1.split("\n",1)[0].strip()
+        if read_data.lower().find("# songnotes") != -1:
+            sn = read_data[read_data.lower().find("# songnotes = ") + 14:]
+            songnotes = sn.split("\n",1)[0].strip()
         if state['list'] != "0" and state["song"] != "0":
-            # offset should always come from list db as different
+            # list db offset should override that in the song
             # lists might have the same song in a different key
             song_db = lists_db[state['list']]['songs'][state['song']]
             state['offset'] = song_db['offset']
             if not 'notes' in song_db:
                 song_db['notes'] = ""
-            songnotes = song_db['notes']
-        else:
-            state['offset'] = "0"
-            songnotes = ""
-            if read_data.lower().find("# trans") != -1:
-                os1 = read_data[read_data.lower().find("# transpose = ") + 14:]
-                state['offset'] = os1.split("\n",1)[0].strip()
-            if read_data.lower().find("# songnotes") != -1:
-                sn = read_data[read_data.lower().find("# songnotes = ") + 14:]
-                songnotes = sn.split("\n",1)[0].strip()
+            if len(song_db['notes']) > 0:
+                songnotes = song_db['notes']
+            # FIXME notes "" should check for inline notes
+            # bug inline notes not showing
         if read_data.lower().find("{t:") == -1:
             if read_data.lower().find("{title:") == -1:
                 # no title
