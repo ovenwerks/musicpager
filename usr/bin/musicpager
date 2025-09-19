@@ -462,19 +462,26 @@ class ChordPro():
                 ht = hite + ht
                 hfile = f'{hfile}\n<div class="subtitle">{txt}</div>'
             else:
-                # height should be songline
+                # songline
                 ht, dmy = ChordPro.rowheight(self, 'songline', zoom)
                 hfile = f'{hfile}\n<table class="songline">'
                 cline = '\n<tr class="chords">'
                 lline = '\n<tr class="lyrics">'
+                choline = '\n<div class="chords">'
                 ourline = line.strip()
+                chonly = False
+                dcline = UserConfig.deChordLine(ourline)
                 if int(columns) > 0 and eval(config['pdf']['lyrics']):
-                    ourline = UserConfig.deChordLine(ourline)
+                    # lyrics only pdf
+                    ourline = dcline
                 if ourline.find("[") == -1:
                     # if no chords, height = lyrics
-                    # FIXME also detect no lyrics
                     ht, dmy = ChordPro.rowheight(self, 'lyrics', zoom)
                     ht = ht * 1.5
+                if dcline.count(' ') == len(dcline):
+                    # no lyrics
+                    ht, dmy = ChordPro.rowheight(self, 'chords', zoom)
+                    chonly = True
                 for sub in ourline.split('['):
                     # each sub has either one ] or none
                     if sub == "":
@@ -483,23 +490,35 @@ class ChordPro():
                     pre, bra, tail = sub.partition("]")
                     if bra == "":
                         #whole thing should be text, no chords
-                        cline = f"{cline}<td> </td>"
                         lspace = pre.replace(' ', '&nbsp;')
-                        lline = f"{lline}<td>{lspace} </td>"
+                        if chonly:
+                            choline = f"{choline}{lspace}"
+                        else:
+                            cline = f"{cline}<td> </td>"
+                            lline = f"{lline}<td>{lspace} </td>"
                     elif not tail == "" and tail[0] == " ":
                         # lyric does not start under chord
                         pre = ChordPro.getOffset(self, pre, offset, key)
-                        cline = f"{cline}<td>{pre} </td><td> </td>"
                         lspace = tail.replace(' ', '&nbsp;')
-                        lline = f"{lline}<td> </td><td>{lspace} </td>"
+                        if chonly:
+                            choline = f"{choline}{pre}{lspace}"
+                        else:
+                            cline = f"{cline}<td>{pre} </td><td> </td>"
+                            lline = f"{lline}<td> </td><td>{lspace} </td>"
                     else:
                         pre = ChordPro.getOffset(self, pre, offset, key)
-                        cline = f"{cline}<td>{pre} </td>"
                         lspace = tail.replace(' ', '&nbsp;')
-                        lline = f"{lline}<td>{lspace} </td>"
-                cline = f"{cline}</tr>\n"
-                lline = f"{lline}</tr>\n"
-                hfile = f'{hfile}{cline}{lline}\n</table>'
+                        if chonly:
+                            choline = f"{choline}{pre}{lspace}"
+                        else:
+                            cline = f"{cline}<td>{pre} </td>"
+                            lline = f"{lline}<td>{lspace} </td>"
+                if chonly:
+                    hfile = f'{hfile}{choline}</div>\n</table>'
+                else:
+                    cline = f"{cline}</tr>\n"
+                    lline = f"{lline}</tr>\n"
+                    hfile = f'{hfile}{cline}{lline}\n</table>'
             height = height + ht
         hfile = f"{hfile}</tr></table></body></html>\n"
         state['pages'] = rpages
@@ -1192,8 +1211,6 @@ class UserConfig():
                 song_db['notes'] = ""
             if len(song_db['notes']) > 0:
                 songnotes = song_db['notes']
-            # FIXME notes "" should check for inline notes
-            # bug inline notes not showing
         if read_data.lower().find("{t:") == -1:
             if read_data.lower().find("{title:") == -1:
                 # no title

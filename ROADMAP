@@ -5,7 +5,7 @@
  things)
 
 Features we want:
- - print to PDF
+ - print to PDF (mostly done, no bass version)
     - probably with html to pdf (started we can load a pdf to a viewer
         which can then print)
     - so add many options to html converter:
@@ -82,16 +82,28 @@ Features we want:
         spaces in the chord line 32spaces equals 20 spaces? 10:16... so
         count spaces and divide by 1.6?
  - network
-    - add webserver that follows server's paging. So that a number of
-        people can follow the same chart on their phone. This is
-        complex requiring a dhcp server, nameserver, or zero(whatever)
-        setup as well as the web server that has to allow
-        multi-directional comunication so that anyone can push page
-        changes and song change (hopefully only one person at a time)
+    - Remember that some wifi routers don't route on LAN
+    - best deal would be each user using this app and just adding
+        communication. Also least likely to happen in real life, so:
+    - add webserver that is a replica of this application.
+        So that a number of people can follow the same chart on their
+        phone. This is complex requiring a dhcp server, nameserver,
+        or zero(whatever) setup as well as the web server that has to
+        allow multi-directional comunication so that anyone can push page
+        changes and song change (hopefully only one person at a time).
+    - For first try, web page can be static as in everyone sees the
+        same thing. Only shows songs, allows paging (for the web users),
+        song change and key change. Paging may be better as single
+        column so page down just works.
+    - Add other features later:
+        - this requires each user to have own session or pass state
+            information
+        - set list creation
         - allow browser to select keys for setlist
         - allow browser to show capo for user. Or kb player to set an
             odd key where they are transposed to. While at the same time
             allowing to change over all key.
         - allow another instance to send/receive songs and setlists
-        - allow another instance to send/receive paging
+        - allow another instance to send/receive paging (not if single
+            column)
 
