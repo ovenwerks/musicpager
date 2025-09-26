@@ -6,6 +6,9 @@ musicpager version 1.2.1
 - Fix chord only lines too widely spaced
 - Fix no space between chords
 - Fix longest line calc to include extra spaces between chords
+- Add pdf page height setting
+- Update man page
+- Update user manual
 
 musicpager version 1.2.0
 

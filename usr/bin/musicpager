@@ -897,6 +897,7 @@ class UserConfig():
         # 1160 settled on through experimentation Works good
         # with 100%-ish but might need to tweak for other values
         if not 'height' in pdfdb:
+            # make any changes in pdfHtReset too
             pdfdb['height'] = 1160
         #print(f"lyrics eval: {str(eval(pdfdb['lyrics']))}")
 
@@ -905,6 +906,7 @@ class UserConfig():
         pdflyricsonly.set_active(eval(pdfdb['lyrics']))
         pdfzoomspin.set_value(int(pdfdb['zoom']))
         pdfcolourch.set_active(eval(pdfdb['colour']))
+        pdfheight.set_value(int(pdfdb['height']))
 
         stylezoom.set_sensitive(False)
         styletitlesz.set_sensitive(False)
@@ -2386,6 +2388,21 @@ class Handler:
         UserConfig.Save(self)
         # FIXME add page height setting and reset
 
+    def pdfNewHeight(self, widget):
+        global config
+        print(f"new pdf height value: {str(widget.get_value())}")
+        if config['pdf']['height'] == str(widget.get_value()):
+            return
+        config['pdf']['height'] = str(int(widget.get_value()))
+        UserConfig.Save(self)
+
+    def pdfHtReset(self, widget):
+        global config
+        # change in _init_ too
+        config['pdf']['height'] = 1160
+        pdfheight.set_value(1160)
+        UserConfig.Save(self)
+
     def pdflyricsSet(self, widget):
         global config
         if config['pdf']['lyrics'] == str(widget.get_active()):
@@ -2639,6 +2656,7 @@ pdfcoldrop = builder.get_object("pdfColDrop")
 pdflyricsonly = builder.get_object("pdflyricsonly")
 pdfzoomspin = builder.get_object("PdfZoomSpin")
 pdfcolourch = builder.get_object("pdfColourCh")
+pdfheight = builder.get_object("pdfHeight")
 
 #settings
 stylezoom = builder.get_object("chartzoom")
