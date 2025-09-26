@@ -463,6 +463,7 @@ class ChordPro():
                 hfile = f'{hfile}\n<div class="subtitle">{txt}</div>'
             else:
                 # songline
+                #   need to detect middle of word and add " - "
                 ht, dmy = ChordPro.rowheight(self, 'songline', zoom)
                 hfile = f'{hfile}\n<table class="songline">'
                 cline = '\n<tr class="chords">'
@@ -496,23 +497,23 @@ class ChordPro():
                         else:
                             cline = f"{cline}<td> </td>"
                             lline = f"{lline}<td>{lspace} </td>"
-                    elif not tail == "" and tail[0] == " ":
+                    elif tail != "" and tail[0] == " ":
                         # lyric does not start under chord
                         pre = ChordPro.getOffset(self, pre, offset, key)
                         lspace = tail.replace(' ', '&nbsp;')
                         if chonly:
                             choline = f"{choline}{pre}{lspace}"
                         else:
-                            cline = f"{cline}<td>{pre} </td><td> </td>"
-                            lline = f"{lline}<td> </td><td>{lspace} </td>"
+                            cline = f"{cline}<td>&nbsp;{pre} </td><td> </td>"
+                            lline = f"{lline}<td>&nbsp;</td><td>{lspace} </td>"
                     else:
                         pre = ChordPro.getOffset(self, pre, offset, key)
                         lspace = tail.replace(' ', '&nbsp;')
                         if chonly:
                             choline = f"{choline}{pre}{lspace}"
                         else:
-                            cline = f"{cline}<td>{pre} </td>"
-                            lline = f"{lline}<td>{lspace} </td>"
+                            cline = f"{cline}<td>&nbsp;{pre} </td>"
+                            lline = f"{lline}<td>&nbsp;{lspace} </td>"
                 if chonly:
                     hfile = f'{hfile}{choline}</div>\n</table>'
                 else:
@@ -2377,6 +2378,7 @@ class Handler:
             return
         config['pdf']['columns'] = widget.get_active_id()
         UserConfig.Save(self)
+        # FIXME add page height setting and reset
 
     def pdflyricsSet(self, widget):
         global config
@@ -2580,7 +2582,7 @@ global settingvisit
 settingvisit = False
 
 appname = "musicpager"
-appversion = "version: 1.2.0"
+appversion = "version: 1.2.1"
 
 # set up our glade file
 builder = Gtk.Builder()
