@@ -4,6 +4,8 @@ musicpager version 1.2.1
 - Change hotkey defaults
 - Fix notes in song file not displayed
 - Fix chord only lines too widely spaced
+- Fix no space between chords
+- Fix longest line calc to include extra spaces between chords
 
 musicpager version 1.2.0
 

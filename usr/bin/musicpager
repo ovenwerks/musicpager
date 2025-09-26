@@ -197,6 +197,7 @@ class ChordPro():
             if '{copy' in line or '©' in line or '(c)' in line:
                 break
             llen = 0
+            crdcnt = line.count("[")
             ourline = line.strip()
             if ourline.find("[") == -1:
                 if len(ourline) > llen:
@@ -215,8 +216,8 @@ class ChordPro():
                     llen = llen + len(pre)
                 else:
                     llen = llen + len(tail)
-            if llen > longest:
-                longest = llen
+            if (llen + crdcnt) > longest:
+                longest = llen + crdcnt
         return longest
 
 
@@ -350,7 +351,10 @@ class ChordPro():
         global config
         state = config['state']
         rawwide = ChordPro.getlongline(self, strng)
-        wide = rawwide * zoom * 7
+        # 7 was first try but some space left
+        # also in save_webcss
+        # TODO monitor page width here too
+        wide = rawwide * zoom * 6.5
         if int(columns) == 2 and wide > 400:
              print(f"columns are too wide for two.")
              columns = 1
@@ -887,12 +891,13 @@ class UserConfig():
             pdfdb['zoom'] = "100"
         if not 'colour' in pdfdb:
             pdfdb['colour'] = "False"
-        # FIXME pdf height
+        # TODO monitor pdf height
         #boxht = 1056 # 1056 is supposed to be std :P
         # 1196 current working number sometimes goes next page
         # 1160 settled on through experimentation Works good
         # with 100%-ish but might need to tweak for other values
-        pdfdb['height'] = 1160
+        if not 'height' in pdfdb:
+            pdfdb['height'] = 1160
         #print(f"lyrics eval: {str(eval(pdfdb['lyrics']))}")
 
         pdffoldersel.set_current_folder(pdfdb['folder'])
@@ -1313,9 +1318,10 @@ class UserConfig():
         c_str = f"{c_str}{t_str}"
         p_str = f"{p_str}{t_str}"
         # next two lines, set 7 to optimum char width
-        # also in loadsong
-        pgsz = pagewide * zm * 7
-        ppgsz = pagewide * pzm * 7
+        # also in tohtml
+        # TODO monitor for page width bugs
+        pgsz = pagewide * zm * 6.5
+        ppgsz = pagewide * pzm * 6.5
         exra = f"{el}\n.songline{sl}\n\theight: "
         c_str = f"{c_str}\n\tmin-width: {pgsz}px;\n\tmax-width: {pgsz}{exra}"
         p_str = f"{p_str}\n\tmin-width: {ppgsz}px;\n\tmax-width: {ppgsz}{exra}"
