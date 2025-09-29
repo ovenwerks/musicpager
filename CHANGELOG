@@ -9,6 +9,7 @@ musicpager version 1.2.1
 - Add pdf page height setting
 - Update man page
 - Update user manual
+- Fix pdf zoom value not taking effect
 
 musicpager version 1.2.0
 

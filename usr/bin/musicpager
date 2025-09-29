@@ -2386,7 +2386,6 @@ class Handler:
             return
         config['pdf']['columns'] = widget.get_active_id()
         UserConfig.Save(self)
-        # FIXME add page height setting and reset
 
     def pdfNewHeight(self, widget):
         global config
@@ -2415,7 +2414,7 @@ class Handler:
         if config['pdf']['zoom'] == str(widget.get_value()):
             return
         config['pdf']['zoom'] = str(int(widget.get_value()))
-        #UserConfig.save_webcss(self) # everything that needs this runs it
+        UserConfig.save_webcss(self)
         UserConfig.Save(self)
 
     def pdfColourSet(self, widget):
