@@ -354,7 +354,7 @@ class ChordPro():
         # 7 was first try but some space left
         # also in save_webcss
         # TODO monitor page width here too
-        wide = rawwide * zoom * 6.5
+        wide = rawwide * zoom * 6.55
         if int(columns) == 2 and wide > 400:
              print(f"columns are too wide for two.")
              columns = 1
@@ -1322,8 +1322,8 @@ class UserConfig():
         # next two lines, set 7 to optimum char width
         # also in tohtml
         # TODO monitor for page width bugs
-        pgsz = pagewide * zm * 6.5
-        ppgsz = pagewide * pzm * 6.5
+        pgsz = pagewide * zm * 6.55
+        ppgsz = pagewide * pzm * 6.55
         exra = f"{el}\n.songline{sl}\n\theight: "
         c_str = f"{c_str}\n\tmin-width: {pgsz}px;\n\tmax-width: {pgsz}{exra}"
         p_str = f"{p_str}\n\tmin-width: {ppgsz}px;\n\tmax-width: {ppgsz}{exra}"
