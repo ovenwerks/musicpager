@@ -189,7 +189,7 @@ class ChordPro():
             lines that might be split like subtitle or copyright
             are not included.
         '''
-        longest = 0
+        longest = 60 # minimum length
         buf = io.StringIO(instring)
         for line in buf:
             if line[0] == '{':
